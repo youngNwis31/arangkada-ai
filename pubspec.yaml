@@ -1,0 +1,55 @@
+name: arangkada_ai
+description: "Arangkada AI — 24/7 Rider-Centric Navigation & Road Assistant for the Philippines"
+publish_to: 'none'
+version: 0.0.1+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Maps & Navigation
+  mapbox_maps_flutter: ^2.4.0
+
+  # Location & Sensors
+  geolocator: ^13.0.2
+  sensors_plus: ^6.1.1
+  connectivity_plus: ^6.1.1
+
+  # State Management
+  provider: ^6.1.2
+
+  # Local Storage (Offline-First)
+  sqflite: ^2.4.1
+  path: ^1.9.1
+  shared_preferences: ^2.3.4
+  hive_flutter: ^1.1.0
+
+  # Networking
+  http: ^1.2.2
+
+  # Voice (Offline STT/TTS)
+  flutter_tts: ^4.2.0
+
+  # Charts
+  fl_chart: ^0.70.2
+
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^4.5.1
+  permission_handler: ^11.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
+    - assets/icons/
