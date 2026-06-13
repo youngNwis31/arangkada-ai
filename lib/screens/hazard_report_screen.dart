@@ -38,6 +38,7 @@ class _HazardReportScreenState extends State<HazardReportScreen> {
     );
 
     if (mounted) {
+      final c = MalateColors.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -48,11 +49,11 @@ class _HazardReportScreenState extends State<HazardReportScreen> {
               Text(
                 '${_selected!.tagalog} reported — salamat, rider!',
                 style: MalateTypography.bodyMedium
-                    .copyWith(color: MalateColors.textPrimary),
+                    .copyWith(color: c.textPrimary),
               ),
             ],
           ),
-          backgroundColor: MalateColors.gutter,
+          backgroundColor: c.gutter,
         ),
       );
       Navigator.pop(context);
@@ -61,12 +62,13 @@ class _HazardReportScreenState extends State<HazardReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
     return Scaffold(
-      backgroundColor: MalateColors.midnight,
+      backgroundColor: c.midnight,
       appBar: AppBar(
-        backgroundColor: MalateColors.midnight,
+        backgroundColor: c.midnight,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: MalateColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: c.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('REPORT HAZARD',
@@ -106,14 +108,14 @@ class _HazardReportScreenState extends State<HazardReportScreen> {
                         Text(
                           type.tagalog,
                           style: MalateTypography.labelMedium.copyWith(
-                            color: isSelected ? color : MalateColors.textSecondary,
+                            color: isSelected ? color : c.textSecondary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         Text(
                           type.english,
                           style: MalateTypography.labelSmall.copyWith(
-                            color: MalateColors.textMuted,
+                            color: c.textMuted,
                           ),
                         ),
                       ],
@@ -129,11 +131,11 @@ class _HazardReportScreenState extends State<HazardReportScreen> {
               child: ElevatedButton.icon(
                 onPressed: _selected != null && !_submitting ? _submit : null,
                 icon: _submitting
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: MalateColors.midnight),
+                            strokeWidth: 2, color: c.midnight),
                       )
                     : const Icon(Icons.send, size: 20),
                 label: Text(
@@ -143,10 +145,10 @@ class _HazardReportScreenState extends State<HazardReportScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _selected != null
                       ? MalateColors.electricAmber
-                      : MalateColors.concrete,
-                  foregroundColor: MalateColors.midnight,
-                  disabledBackgroundColor: MalateColors.concrete,
-                  disabledForegroundColor: MalateColors.textDisabled,
+                      : c.concrete,
+                  foregroundColor: c.midnight,
+                  disabledBackgroundColor: c.concrete,
+                  disabledForegroundColor: c.textDisabled,
                 ),
               ),
             ),

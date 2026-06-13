@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
+import 'malate_color_extension.dart';
 
 class MalateColors {
   MalateColors._();
 
-  // ── Core Backgrounds ──
+  static MalateColorExtension of(BuildContext context) =>
+      Theme.of(context).extension<MalateColorExtension>()!;
+
+  // ── Core Backgrounds (static fallbacks for non-context code) ──
   static const Color midnight = Color(0xFF0D0D0D);
   static const Color asphalt = Color(0xFF141414);
   static const Color gutter = Color(0xFF1A1A1A);
   static const Color sidewalk = Color(0xFF242424);
   static const Color concrete = Color(0xFF2E2E2E);
 
-  // ── Neon Accents (Malate Nightlife) ──
+  // ── Neon Accents (same in both light and dark) ──
   static const Color neonMint = Color(0xFF00FF94);
   static const Color cyberCyan = Color(0xFF00E5FF);
   static const Color electricAmber = Color(0xFFFFB300);
   static const Color hazardRed = Color(0xFFFF3D3D);
   static const Color signalWhite = Color(0xFFF5F5F5);
 
-  // ── Text Hierarchy ──
+  // ── Text Hierarchy (static fallbacks) ──
   static const Color textPrimary = Color(0xFFF5F5F5);
   static const Color textSecondary = Color(0xFFAAAAAA);
   static const Color textMuted = Color(0xFF666666);

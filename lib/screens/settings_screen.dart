@@ -6,6 +6,7 @@ import '../config/theme/malate_typography.dart';
 import '../core/offline/connectivity_monitor.dart';
 import '../core/battery/battery_saver.dart';
 import '../services/ride_logger.dart';
+import '../services/theme_provider.dart';
 import '../widgets/malate_card.dart';
 import 'earnings_screen.dart';
 
@@ -14,15 +15,17 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
     final connectivity = context.watch<ConnectivityMonitor>();
     final battery = context.watch<BatterySaver>();
+    final themeProvider = context.watch<ThemeProvider>();
 
     return Scaffold(
-      backgroundColor: MalateColors.midnight,
+      backgroundColor: c.midnight,
       appBar: AppBar(
-        backgroundColor: MalateColors.midnight,
+        backgroundColor: c.midnight,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: MalateColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: c.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('SETTINGS',
@@ -31,8 +34,47 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          // ── Appearance ──
+          _sectionHeader(context, 'APPEARANCE'),
+          const SizedBox(height: 12),
+          MalateCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      themeProvider.isDark
+                          ? Icons.dark_mode
+                          : Icons.light_mode,
+                      color: MalateColors.electricAmber,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text('Theme', style: MalateTypography.bodyMedium),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _themeChip(context, 'System', ThemeMode.system,
+                        themeProvider, Icons.settings_suggest),
+                    const SizedBox(width: 8),
+                    _themeChip(context, 'Light', ThemeMode.light,
+                        themeProvider, Icons.light_mode),
+                    const SizedBox(width: 8),
+                    _themeChip(context, 'Dark', ThemeMode.dark,
+                        themeProvider, Icons.dark_mode),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
           // ── Status Section ──
-          _sectionHeader('STATUS'),
+          _sectionHeader(context, 'STATUS'),
           const SizedBox(height: 12),
           MalateCard(
             child: Column(
@@ -45,7 +87,7 @@ class SettingsScreen extends StatelessWidget {
                       : MalateColors.hazardRed,
                   connectivity.isOnline ? Icons.wifi : Icons.wifi_off,
                 ),
-                const Divider(color: MalateColors.sidewalk),
+                Divider(color: c.sidewalk),
                 _statusRow(
                   'Battery Saver',
                   battery.isStationary ? 'ACTIVE — GPS throttled' : 'MOVING',
@@ -56,7 +98,7 @@ class SettingsScreen extends StatelessWidget {
                       ? Icons.battery_saver
                       : Icons.speed,
                 ),
-                const Divider(color: MalateColors.sidewalk),
+                Divider(color: c.sidewalk),
                 _statusRow(
                   'GPS Interval',
                   '${battery.recommendedGpsIntervalMs ~/ 1000}s',
@@ -69,10 +111,11 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 32),
 
-          // ── App Actions ──
-          _sectionHeader('FEATURES'),
+          // ── Features ──
+          _sectionHeader(context, 'FEATURES'),
           const SizedBox(height: 12),
           _settingsTile(
+            context,
             icon: Icons.cloud_download,
             color: MalateColors.cyberCyan,
             title: 'Offline Maps',
@@ -86,6 +129,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _settingsTile(
+            context,
             icon: Icons.smart_toy,
             color: MalateColors.cyberCyan,
             title: 'AI Model',
@@ -94,6 +138,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _settingsTile(
+            context,
             icon: Icons.record_voice_over,
             color: MalateColors.electricAmber,
             title: 'Voice Navigation',
@@ -102,6 +147,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _settingsTile(
+            context,
             icon: Icons.account_balance_wallet,
             color: MalateColors.neonMint,
             title: 'Earnings Tracker',
@@ -117,7 +163,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 32),
 
           // ── Vehicle Settings ──
-          _sectionHeader('VEHICLE'),
+          _sectionHeader(context, 'VEHICLE'),
           const SizedBox(height: 12),
           Builder(builder: (context) {
             final logger = context.watch<RideLogger>();
@@ -136,7 +182,7 @@ class SettingsScreen extends StatelessWidget {
                       (v) => logger.setFuelPrice(v),
                     ),
                   ),
-                  const Divider(color: MalateColors.sidewalk),
+                  Divider(color: c.sidewalk),
                   _editableSettingsRow(
                     context,
                     icon: Icons.speed,
@@ -157,7 +203,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 32),
 
           // ── About Section ──
-          _sectionHeader('ABOUT'),
+          _sectionHeader(context, 'ABOUT'),
           const SizedBox(height: 12),
           MalateCard(
             child: Column(
@@ -193,27 +239,27 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 _aboutRow('Developer', AppConfig.developer),
-                const Divider(color: MalateColors.sidewalk, height: 24),
+                Divider(color: c.sidewalk, height: 24),
                 _aboutRow('Version', AppConfig.appVersion),
-                const Divider(color: MalateColors.sidewalk, height: 24),
+                Divider(color: c.sidewalk, height: 24),
                 _aboutRow('Stack', 'Flutter + Mapbox + Firebase'),
-                const Divider(color: MalateColors.sidewalk, height: 24),
+                Divider(color: c.sidewalk, height: 24),
                 _aboutRow('Budget', '₱0 — Free Tier Optimized'),
                 const SizedBox(height: 16),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: MalateColors.midnight,
+                    color: c.midnight,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: MalateColors.sidewalk),
+                    border: Border.all(color: c.sidewalk),
                   ),
                   child: Text(
                     'Built for Philippine riders — Grab, FoodPanda, '
                     'MoveIt, Angkas, JoyRide',
                     textAlign: TextAlign.center,
                     style: MalateTypography.bodySmall.copyWith(
-                      color: MalateColors.textMuted,
+                      color: c.textMuted,
                       height: 1.5,
                     ),
                   ),
@@ -228,7 +274,7 @@ class SettingsScreen extends StatelessWidget {
             child: Text(
               '© 2024 ${AppConfig.developer}',
               style: MalateTypography.labelSmall.copyWith(
-                color: MalateColors.textDisabled,
+                color: c.textDisabled,
               ),
             ),
           ),
@@ -238,11 +284,50 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _sectionHeader(String title) {
+  Widget _themeChip(BuildContext context, String label, ThemeMode mode,
+      ThemeProvider provider, IconData icon) {
+    final c = MalateColors.of(context);
+    final isSelected = provider.themeMode == mode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => provider.setMode(mode),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? MalateColors.neonMint.withValues(alpha: 0.12)
+                : c.gutter,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? MalateColors.neonMint : c.sidewalk,
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(icon,
+                  color: isSelected ? MalateColors.neonMint : c.textSecondary,
+                  size: 20),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: MalateTypography.labelMedium.copyWith(
+                  color: isSelected ? MalateColors.neonMint : c.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(BuildContext context, String title) {
+    final c = MalateColors.of(context);
     return Text(
       title,
-      style: MalateTypography.neonAccent(MalateColors.textMuted)
-          .copyWith(fontSize: 11),
+      style: MalateTypography.neonAccent(c.textMuted).copyWith(fontSize: 11),
     );
   }
 
@@ -296,6 +381,7 @@ class SettingsScreen extends StatelessWidget {
     required String value,
     required VoidCallback onTap,
   }) {
+    final c = MalateColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -308,9 +394,9 @@ class SettingsScreen extends StatelessWidget {
             const Spacer(),
             Text(value,
                 style: MalateTypography.headlineSmall
-                    .copyWith(fontSize: 14, color: MalateColors.textPrimary)),
+                    .copyWith(fontSize: 14, color: c.textPrimary)),
             const SizedBox(width: 8),
-            const Icon(Icons.edit, color: MalateColors.textMuted, size: 16),
+            Icon(Icons.edit, color: c.textMuted, size: 16),
           ],
         ),
       ),
@@ -319,11 +405,12 @@ class SettingsScreen extends StatelessWidget {
 
   void _editVehicleNumber(BuildContext context, String title, double current,
       ValueChanged<double> onSave) {
+    final c = MalateColors.of(context);
     final controller = TextEditingController(text: current.toStringAsFixed(0));
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: MalateColors.asphalt,
+        backgroundColor: c.asphalt,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(title, style: MalateTypography.headlineMedium),
         content: TextField(
@@ -334,7 +421,7 @@ class SettingsScreen extends StatelessWidget {
           textAlign: TextAlign.center,
           decoration: InputDecoration(
             filled: true,
-            fillColor: MalateColors.gutter,
+            fillColor: c.gutter,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -344,8 +431,7 @@ class SettingsScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:
-                Text('CANCEL', style: TextStyle(color: MalateColors.textMuted)),
+            child: Text('CANCEL', style: TextStyle(color: c.textMuted)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -355,7 +441,7 @@ class SettingsScreen extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: MalateColors.neonMint,
-              foregroundColor: MalateColors.midnight,
+              foregroundColor: c.midnight,
             ),
             child: const Text('SAVE'),
           ),
@@ -364,13 +450,15 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _settingsTile({
+  Widget _settingsTile(
+    BuildContext context, {
     required IconData icon,
     required Color color,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final c = MalateColors.of(context);
     return MalateCard(
       onTap: onTap,
       child: Row(
@@ -389,12 +477,14 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: MalateTypography.headlineSmall.copyWith(fontSize: 15)),
+                Text(title,
+                    style:
+                        MalateTypography.headlineSmall.copyWith(fontSize: 15)),
                 Text(subtitle, style: MalateTypography.bodySmall),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: MalateColors.textMuted),
+          Icon(Icons.chevron_right, color: c.textMuted),
         ],
       ),
     );

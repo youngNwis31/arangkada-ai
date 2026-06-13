@@ -13,20 +13,20 @@ class EarningsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
     return Scaffold(
-      backgroundColor: MalateColors.midnight,
+      backgroundColor: c.midnight,
       appBar: AppBar(
-        backgroundColor: MalateColors.midnight,
+        backgroundColor: c.midnight,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: MalateColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: c.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('EARNINGS',
             style: MalateTypography.neonAccent(MalateColors.neonMint)),
         actions: [
           IconButton(
-            icon:
-                const Icon(Icons.refresh, color: MalateColors.textSecondary),
+            icon: Icon(Icons.refresh, color: c.textSecondary),
             onPressed: () => context.read<RideLogger>().refreshLogs(),
           ),
         ],
@@ -36,15 +36,15 @@ class EarningsScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              _todayCard(logger),
+              _todayCard(context, logger),
               const SizedBox(height: 20),
               EarningsWeeklyChart(rideCounts: logger.weeklyRideCounts),
               const SizedBox(height: 20),
-              _weekSummary(logger),
+              _weekSummary(context, logger),
               const SizedBox(height: 20),
-              _platformBreakdown(logger),
+              _platformBreakdown(context, logger),
               const SizedBox(height: 20),
-              _recentRides(logger),
+              _recentRides(context, logger),
               const SizedBox(height: 20),
               _fuelSettings(context, logger),
               const SizedBox(height: 40),
@@ -55,11 +55,12 @@ class EarningsScreen extends StatelessWidget {
     );
   }
 
-  Widget _todayCard(RideLogger logger) {
+  Widget _todayCard(BuildContext context, RideLogger logger) {
+    final c = MalateColors.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: MalateColors.asphalt,
+        color: c.asphalt,
         borderRadius: BorderRadius.circular(20),
         border:
             Border.all(color: MalateColors.neonMint.withValues(alpha: 0.2)),
@@ -91,14 +92,15 @@ class EarningsScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Row(
             children: [
-              _miniStat(Icons.straighten, '${logger.todayDistance.toStringAsFixed(1)} km',
+              _miniStat(context, Icons.straighten,
+                  '${logger.todayDistance.toStringAsFixed(1)} km',
                   'DISTANCE', MalateColors.cyberCyan),
               const SizedBox(width: 12),
-              _miniStat(Icons.local_gas_station,
+              _miniStat(context, Icons.local_gas_station,
                   _formatPeso(logger.todayFuelCost), 'FUEL COST',
                   MalateColors.electricAmber),
               const SizedBox(width: 12),
-              _miniStat(Icons.account_balance_wallet,
+              _miniStat(context, Icons.account_balance_wallet,
                   _formatPeso(logger.todayEarnings - logger.todayFuelCost),
                   'NET', MalateColors.neonMint),
             ],
@@ -108,12 +110,14 @@ class EarningsScreen extends StatelessWidget {
     );
   }
 
-  Widget _miniStat(IconData icon, String value, String label, Color color) {
+  Widget _miniStat(BuildContext context, IconData icon, String value,
+      String label, Color color) {
+    final c = MalateColors.of(context);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: MalateColors.midnight,
+          color: c.midnight,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -122,16 +126,18 @@ class EarningsScreen extends StatelessWidget {
             const SizedBox(height: 6),
             Text(value,
                 style: MalateTypography.headlineSmall
-                    .copyWith(fontSize: 13, color: MalateColors.textPrimary)),
+                    .copyWith(fontSize: 13, color: c.textPrimary)),
             const SizedBox(height: 2),
-            Text(label, style: MalateTypography.labelSmall.copyWith(fontSize: 9)),
+            Text(label,
+                style: MalateTypography.labelSmall.copyWith(fontSize: 9)),
           ],
         ),
       ),
     );
   }
 
-  Widget _weekSummary(RideLogger logger) {
+  Widget _weekSummary(BuildContext context, RideLogger logger) {
+    final c = MalateColors.of(context);
     return MalateCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,21 +148,21 @@ class EarningsScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _summaryRow('Total Earnings', _formatPeso(logger.weekEarnings),
               MalateColors.neonMint),
-          const Divider(color: MalateColors.sidewalk, height: 16),
+          Divider(color: c.sidewalk, height: 16),
           _summaryRow('Fuel Cost', _formatPeso(logger.weekFuelCost),
               MalateColors.electricAmber),
-          const Divider(color: MalateColors.sidewalk, height: 16),
+          Divider(color: c.sidewalk, height: 16),
           _summaryRow(
               'Net Profit',
               _formatPeso(logger.weekEarnings - logger.weekFuelCost),
               MalateColors.neonMint),
-          const Divider(color: MalateColors.sidewalk, height: 16),
+          Divider(color: c.sidewalk, height: 16),
           _summaryRow('Total Distance',
               '${logger.weekDistance.toStringAsFixed(1)} km',
               MalateColors.cyberCyan),
-          const Divider(color: MalateColors.sidewalk, height: 16),
+          Divider(color: c.sidewalk, height: 16),
           _summaryRow(
-              'Total Rides', '${logger.weekLogs.length}', MalateColors.textPrimary),
+              'Total Rides', '${logger.weekLogs.length}', c.textPrimary),
         ],
       ),
     );
@@ -168,20 +174,21 @@ class EarningsScreen extends StatelessWidget {
         Text(label, style: MalateTypography.bodyMedium),
         const Spacer(),
         Text(value,
-            style:
-                MalateTypography.headlineSmall.copyWith(color: valueColor, fontSize: 15)),
+            style: MalateTypography.headlineSmall
+                .copyWith(color: valueColor, fontSize: 15)),
       ],
     );
   }
 
-  Widget _platformBreakdown(RideLogger logger) {
+  Widget _platformBreakdown(BuildContext context, RideLogger logger) {
+    final c = MalateColors.of(context);
     final breakdown = logger.earningsByPlatform;
     if (breakdown.isEmpty) {
       return MalateCard(
         child: Column(
           children: [
             Text('PER PLATFORM',
-                style: MalateTypography.neonAccent(MalateColors.textMuted)
+                style: MalateTypography.neonAccent(c.textMuted)
                     .copyWith(fontSize: 11)),
             const SizedBox(height: 12),
             Text('No rides yet this week',
@@ -199,7 +206,7 @@ class EarningsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('PER PLATFORM',
-              style: MalateTypography.neonAccent(MalateColors.textMuted)
+              style: MalateTypography.neonAccent(c.textMuted)
                   .copyWith(fontSize: 11)),
           const SizedBox(height: 12),
           ...sorted.map((e) => Padding(
@@ -221,14 +228,15 @@ class EarningsScreen extends StatelessWidget {
     );
   }
 
-  Widget _recentRides(RideLogger logger) {
+  Widget _recentRides(BuildContext context, RideLogger logger) {
+    final c = MalateColors.of(context);
     final recent = logger.todayLogs.take(5).toList();
     if (recent.isEmpty) {
       return MalateCard(
         child: Column(
           children: [
             Text('RECENT RIDES',
-                style: MalateTypography.neonAccent(MalateColors.textMuted)
+                style: MalateTypography.neonAccent(c.textMuted)
                     .copyWith(fontSize: 11)),
             const SizedBox(height: 12),
             Text('Wala pang ride ngayon',
@@ -243,16 +251,17 @@ class EarningsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('RECENT RIDES',
-              style: MalateTypography.neonAccent(MalateColors.textMuted)
+              style: MalateTypography.neonAccent(c.textMuted)
                   .copyWith(fontSize: 11)),
           const SizedBox(height: 12),
-          ...recent.map((ride) => _rideRow(ride)),
+          ...recent.map((ride) => _rideRow(context, ride)),
         ],
       ),
     );
   }
 
-  Widget _rideRow(RideLog ride) {
+  Widget _rideRow(BuildContext context, RideLog ride) {
+    final c = MalateColors.of(context);
     final timeStr = DateFormat('h:mm a').format(ride.startTime);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -266,7 +275,7 @@ class EarningsScreen extends StatelessWidget {
               children: [
                 Text('${ride.platform.label} — $timeStr',
                     style: MalateTypography.bodyMedium
-                        .copyWith(color: MalateColors.textPrimary, fontSize: 13)),
+                        .copyWith(color: c.textPrimary, fontSize: 13)),
                 Text('${ride.distanceText} • ${ride.durationText}',
                     style: MalateTypography.bodySmall),
               ],
@@ -283,6 +292,7 @@ class EarningsScreen extends StatelessWidget {
   }
 
   Widget _fuelSettings(BuildContext context, RideLogger logger) {
+    final c = MalateColors.of(context);
     return MalateCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,7 +310,7 @@ class EarningsScreen extends StatelessWidget {
                 context, 'Fuel Price (₱/L)', logger.fuelPricePerLiter,
                 (v) => logger.setFuelPrice(v)),
           ),
-          const Divider(color: MalateColors.sidewalk, height: 20),
+          Divider(color: c.sidewalk, height: 20),
           _editableRow(
             context,
             icon: Icons.speed,
@@ -320,6 +330,7 @@ class EarningsScreen extends StatelessWidget {
       required String label,
       required String value,
       required VoidCallback onTap}) {
+    final c = MalateColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Row(
@@ -330,9 +341,9 @@ class EarningsScreen extends StatelessWidget {
           const Spacer(),
           Text(value,
               style: MalateTypography.headlineSmall
-                  .copyWith(fontSize: 14, color: MalateColors.textPrimary)),
+                  .copyWith(fontSize: 14, color: c.textPrimary)),
           const SizedBox(width: 8),
-          const Icon(Icons.edit, color: MalateColors.textMuted, size: 16),
+          Icon(Icons.edit, color: c.textMuted, size: 16),
         ],
       ),
     );
@@ -340,11 +351,12 @@ class EarningsScreen extends StatelessWidget {
 
   void _editNumber(BuildContext context, String title, double current,
       ValueChanged<double> onSave) {
+    final c = MalateColors.of(context);
     final controller = TextEditingController(text: current.toStringAsFixed(0));
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: MalateColors.asphalt,
+        backgroundColor: c.asphalt,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(title, style: MalateTypography.headlineMedium),
         content: TextField(
@@ -355,7 +367,7 @@ class EarningsScreen extends StatelessWidget {
           textAlign: TextAlign.center,
           decoration: InputDecoration(
             filled: true,
-            fillColor: MalateColors.gutter,
+            fillColor: c.gutter,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -365,8 +377,7 @@ class EarningsScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('CANCEL',
-                style: TextStyle(color: MalateColors.textMuted)),
+            child: Text('CANCEL', style: TextStyle(color: c.textMuted)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -376,7 +387,7 @@ class EarningsScreen extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: MalateColors.neonMint,
-              foregroundColor: MalateColors.midnight,
+              foregroundColor: c.midnight,
             ),
             child: const Text('SAVE'),
           ),

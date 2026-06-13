@@ -18,14 +18,15 @@ class RouteInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
     return Container(
-      decoration: const BoxDecoration(
-        color: MalateColors.asphalt,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: c.asphalt,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         border: Border(
-          top: BorderSide(color: MalateColors.sidewalk),
-          left: BorderSide(color: MalateColors.sidewalk),
-          right: BorderSide(color: MalateColors.sidewalk),
+          top: BorderSide(color: c.sidewalk),
+          left: BorderSide(color: c.sidewalk),
+          right: BorderSide(color: c.sidewalk),
         ),
       ),
       child: SafeArea(
@@ -41,7 +42,7 @@ class RouteInfoCard extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: MalateColors.concrete,
+                    color: c.concrete,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -69,12 +70,12 @@ class RouteInfoCard extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   itemCount: routes.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemBuilder: (_, i) => _buildRouteCard(i),
+                  itemBuilder: (ctx, i) => _buildRouteCard(ctx, i),
                 ),
               ),
               if (routes.isNotEmpty && selectedIndex < routes.length) ...[
                 const SizedBox(height: 12),
-                _buildSteps(routes[selectedIndex]),
+                _buildSteps(context, routes[selectedIndex]),
               ],
             ],
           ),
@@ -83,7 +84,8 @@ class RouteInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildRouteCard(int index) {
+  Widget _buildRouteCard(BuildContext context, int index) {
+    final c = MalateColors.of(context);
     final route = routes[index];
     final isSelected = index == selectedIndex;
     final isAi = route.label == 'AI RECOMMENDED';
@@ -94,10 +96,10 @@ class RouteInfoCard extends StatelessWidget {
         width: 155,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? MalateColors.gutter : MalateColors.midnight,
+          color: isSelected ? c.gutter : c.midnight,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? MalateColors.neonMint : MalateColors.sidewalk,
+            color: isSelected ? MalateColors.neonMint : c.sidewalk,
             width: isSelected ? 1.5 : 1,
           ),
           boxShadow:
@@ -114,7 +116,7 @@ class RouteInfoCard extends StatelessWidget {
                 fontSize: 22,
                 color: isSelected
                     ? MalateColors.neonMint
-                    : MalateColors.textPrimary,
+                    : c.textPrimary,
               ),
             ),
             const SizedBox(height: 2),
@@ -148,15 +150,16 @@ class RouteInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSteps(RouteModel route) {
+  Widget _buildSteps(BuildContext context, RouteModel route) {
+    final c = MalateColors.of(context);
     final steps = route.steps.where((s) => s.instruction.isNotEmpty).take(3).toList();
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: MalateColors.midnight,
+        color: c.midnight,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: MalateColors.sidewalk),
+        border: Border.all(color: c.sidewalk),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +181,7 @@ class RouteInfoCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: MalateTypography.bodySmall
-                            .copyWith(color: MalateColors.textSecondary),
+                            .copyWith(color: c.textSecondary),
                       ),
                     ),
                   ],

@@ -12,15 +12,16 @@ class EarningsWeeklyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
     final maxY = rideCounts.values.fold(0, (a, b) => a > b ? a : b);
     final topY = (maxY + 2).toDouble();
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
       decoration: BoxDecoration(
-        color: MalateColors.gutter,
+        color: c.gutter,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MalateColors.sidewalk),
+        border: Border.all(color: c.sidewalk),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,7 +52,7 @@ class EarningsWeeklyChart extends StatelessWidget {
                             style: MalateTypography.labelSmall.copyWith(
                               color: isToday
                                   ? MalateColors.neonMint
-                                  : MalateColors.textMuted,
+                                  : c.textMuted,
                               fontWeight:
                                   isToday ? FontWeight.w800 : FontWeight.w600,
                             ),

@@ -21,15 +21,16 @@ class MalateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: padding ?? const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: backgroundColor ?? MalateColors.asphalt,
+          color: backgroundColor ?? c.asphalt,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: borderColor ?? MalateColors.sidewalk,
+            color: borderColor ?? c.sidewalk,
             width: 1,
           ),
           boxShadow: glow,

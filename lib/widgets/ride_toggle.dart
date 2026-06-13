@@ -20,13 +20,14 @@ class RideToggle extends StatelessWidget {
   }
 
   Widget _startRideCard(BuildContext context, RideLogger logger) {
+    final c = MalateColors.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: MalateColors.asphalt,
+        color: c.asphalt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MalateColors.sidewalk),
+        border: Border.all(color: c.sidewalk),
       ),
       child: Row(
         children: [
@@ -40,10 +41,10 @@ class RideToggle extends StatelessWidget {
                 icon: const Icon(Icons.play_arrow, size: 20),
                 label: Text('START RIDE',
                     style: MalateTypography.labelLarge
-                        .copyWith(color: MalateColors.midnight, fontSize: 13)),
+                        .copyWith(color: c.midnight, fontSize: 13)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: MalateColors.neonMint,
-                  foregroundColor: MalateColors.midnight,
+                  foregroundColor: c.midnight,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
@@ -57,11 +58,12 @@ class RideToggle extends StatelessWidget {
   }
 
   Widget _activeRideCard(BuildContext context, RideLogger logger) {
+    final c = MalateColors.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: MalateColors.asphalt,
+        color: c.asphalt,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: MalateColors.neonMint.withValues(alpha: 0.4)),
         boxShadow: MalateColors.subtleGlow(MalateColors.neonMint),
@@ -99,14 +101,14 @@ class RideToggle extends StatelessWidget {
               onPressed: () => _showEndRideDialog(context, logger),
               style: ElevatedButton.styleFrom(
                 backgroundColor: MalateColors.hazardRed,
-                foregroundColor: MalateColors.textPrimary,
+                foregroundColor: c.textPrimary,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
               child: Text('END',
                   style: MalateTypography.labelLarge.copyWith(
-                      color: MalateColors.textPrimary, fontSize: 13)),
+                      color: c.textPrimary, fontSize: 13)),
             ),
           ),
         ],
@@ -115,15 +117,16 @@ class RideToggle extends StatelessWidget {
   }
 
   Widget _platformSelector(BuildContext context, RideLogger logger) {
+    final c = MalateColors.of(context);
     return GestureDetector(
       onTap: () => _showPlatformPicker(context, logger),
       child: Container(
         width: 46,
         height: 46,
         decoration: BoxDecoration(
-          color: MalateColors.gutter,
+          color: c.gutter,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: MalateColors.concrete),
+          border: Border.all(color: c.concrete),
         ),
         child: Center(
           child: Text(logger.selectedPlatform.emoji,
@@ -134,9 +137,10 @@ class RideToggle extends StatelessWidget {
   }
 
   void _showPlatformPicker(BuildContext context, RideLogger logger) {
+    final c = MalateColors.of(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: MalateColors.asphalt,
+      backgroundColor: c.asphalt,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => Padding(
@@ -164,12 +168,12 @@ class RideToggle extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: selected
                           ? MalateColors.neonMint.withValues(alpha: 0.1)
-                          : MalateColors.gutter,
+                          : c.gutter,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: selected
                             ? MalateColors.neonMint
-                            : MalateColors.sidewalk,
+                            : c.sidewalk,
                       ),
                     ),
                     child: Text(
@@ -177,7 +181,7 @@ class RideToggle extends StatelessWidget {
                       style: MalateTypography.bodyMedium.copyWith(
                         color: selected
                             ? MalateColors.neonMint
-                            : MalateColors.textSecondary,
+                            : c.textSecondary,
                       ),
                     ),
                   ),
@@ -192,11 +196,12 @@ class RideToggle extends StatelessWidget {
   }
 
   void _showEndRideDialog(BuildContext context, RideLogger logger) {
+    final c = MalateColors.of(context);
     final controller = TextEditingController();
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: MalateColors.asphalt,
+        backgroundColor: c.asphalt,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text('End Ride',
             style: MalateTypography.headlineMedium
@@ -221,9 +226,9 @@ class RideToggle extends StatelessWidget {
                     fontSize: 28),
                 hintText: '0',
                 hintStyle: MalateTypography.headlineLarge.copyWith(
-                    color: MalateColors.textDisabled, fontSize: 28),
+                    color: c.textDisabled, fontSize: 28),
                 filled: true,
-                fillColor: MalateColors.gutter,
+                fillColor: c.gutter,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -236,7 +241,7 @@ class RideToggle extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('CANCEL',
-                style: TextStyle(color: MalateColors.textMuted)),
+                style: TextStyle(color: c.textMuted)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -247,7 +252,7 @@ class RideToggle extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: MalateColors.neonMint,
-              foregroundColor: MalateColors.midnight,
+              foregroundColor: c.midnight,
             ),
             child: const Text('SAVE'),
           ),
@@ -284,6 +289,7 @@ class _RideTimerState extends State<_RideTimer> {
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
     final dur = DateTime.now().difference(widget.startTime);
     final h = dur.inHours.toString().padLeft(2, '0');
     final m = (dur.inMinutes % 60).toString().padLeft(2, '0');
@@ -291,7 +297,7 @@ class _RideTimerState extends State<_RideTimer> {
     return Text(
       '$h:$m:$s',
       style: MalateTypography.headlineSmall
-          .copyWith(color: MalateColors.textPrimary, fontFeatures: [
+          .copyWith(color: c.textPrimary, fontFeatures: [
         const FontFeature.tabularFigures(),
       ]),
     );

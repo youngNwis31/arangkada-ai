@@ -42,12 +42,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
     return Scaffold(
-      backgroundColor: MalateColors.midnight,
+      backgroundColor: c.midnight,
       appBar: AppBar(
-        backgroundColor: MalateColors.midnight,
+        backgroundColor: c.midnight,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: MalateColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: c.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
@@ -74,11 +75,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            color: MalateColors.asphalt,
+            color: c.asphalt,
             child: Text(
               'Offline AI — Taglish & English supported',
               style: MalateTypography.labelSmall
-                  .copyWith(color: MalateColors.textMuted),
+                  .copyWith(color: c.textMuted),
             ),
           ),
           Expanded(
@@ -103,6 +104,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   Widget _bubble(ChatMessage msg) {
+    final c = MalateColors.of(context);
     final isUser = msg.role == MessageRole.user;
 
     return Padding(
@@ -116,7 +118,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isUser ? MalateColors.neonMint.withValues(alpha: 0.12) : MalateColors.gutter,
+            color: isUser ? MalateColors.neonMint.withValues(alpha: 0.12) : c.gutter,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(16),
               topRight: const Radius.circular(16),
@@ -126,13 +128,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             border: Border.all(
               color: isUser
                   ? MalateColors.neonMint.withValues(alpha: 0.2)
-                  : MalateColors.sidewalk,
+                  : c.sidewalk,
             ),
           ),
           child: Text(
             msg.text,
             style: MalateTypography.bodyMedium.copyWith(
-              color: MalateColors.textPrimary,
+              color: c.textPrimary,
               height: 1.5,
             ),
           ),
@@ -142,6 +144,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   Widget _typingIndicator() {
+    final c = MalateColors.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, right: 48),
       child: Row(
@@ -149,9 +152,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: MalateColors.gutter,
+              color: c.gutter,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: MalateColors.sidewalk),
+              border: Border.all(color: c.sidewalk),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -176,12 +179,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   Widget _inputBar() {
+    final c = MalateColors.of(context);
     return Container(
       padding: EdgeInsets.fromLTRB(
           16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
-      decoration: const BoxDecoration(
-        color: MalateColors.asphalt,
-        border: Border(top: BorderSide(color: MalateColors.sidewalk)),
+      decoration: BoxDecoration(
+        color: c.asphalt,
+        border: Border(top: BorderSide(color: c.sidewalk)),
       ),
       child: Row(
         children: [
@@ -189,15 +193,15 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             child: TextField(
               controller: _controller,
               style: MalateTypography.bodyLarge
-                  .copyWith(color: MalateColors.textPrimary),
+                  .copyWith(color: c.textPrimary),
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => _send(),
               decoration: InputDecoration(
                 hintText: 'Ask me anything, rider...',
                 hintStyle: MalateTypography.bodyLarge
-                    .copyWith(color: MalateColors.textMuted),
+                    .copyWith(color: c.textMuted),
                 filled: true,
-                fillColor: MalateColors.gutter,
+                fillColor: c.gutter,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 border: OutlineInputBorder(
@@ -217,8 +221,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 color: MalateColors.cyberCyan,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.send,
-                  color: MalateColors.midnight, size: 22),
+              child: Icon(Icons.send,
+                  color: c.midnight, size: 22),
             ),
           ),
         ],

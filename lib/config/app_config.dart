@@ -10,6 +10,8 @@ class AppConfig {
   static const String mapboxAccessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
   static const String mapboxStyleDark =
       'mapbox://styles/mapbox/navigation-night-v1';
+  static const String mapboxStyleLight =
+      'mapbox://styles/mapbox/navigation-day-v1';
   static const String mapboxDirectionsUrl =
       'https://api.mapbox.com/directions/v5/mapbox';
   static const String mapboxGeocodingUrl =

@@ -59,12 +59,13 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
     return Scaffold(
-      backgroundColor: MalateColors.midnight,
+      backgroundColor: c.midnight,
       appBar: AppBar(
-        backgroundColor: MalateColors.midnight,
+        backgroundColor: c.midnight,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: MalateColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: c.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('SET DESTINATION',
@@ -79,15 +80,15 @@ class _SearchScreenState extends State<SearchScreen> {
               focusNode: _focus,
               onChanged: _onChanged,
               style: MalateTypography.bodyLarge
-                  .copyWith(color: MalateColors.textPrimary),
+                  .copyWith(color: c.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Search places...',
                 prefixIcon: const Icon(Icons.location_on,
                     color: MalateColors.neonMint),
                 suffixIcon: _controller.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear,
-                            color: MalateColors.textMuted, size: 18),
+                        icon: Icon(Icons.clear,
+                            color: c.textMuted, size: 18),
                         onPressed: () {
                           _controller.clear();
                           setState(() => _results = []);
@@ -98,8 +99,8 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           if (_searching)
-            Padding(
-              padding: const EdgeInsets.all(20),
+            const Padding(
+              padding: EdgeInsets.all(20),
               child: CircularProgressIndicator(
                   color: MalateColors.neonMint, strokeWidth: 2),
             ),
@@ -110,7 +111,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: _results.length,
                     separatorBuilder: (_, __) =>
-                        const Divider(color: MalateColors.sidewalk),
+                        Divider(color: c.sidewalk),
                     itemBuilder: (_, i) => _tile(_results[i]),
                   ),
           ),
@@ -120,15 +121,16 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _empty() {
+    final c = MalateColors.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.explore, size: 56, color: MalateColors.textDisabled),
+          Icon(Icons.explore, size: 56, color: c.textDisabled),
           const SizedBox(height: 16),
           Text('Saan ka pupunta?',
               style: MalateTypography.headlineSmall
-                  .copyWith(color: MalateColors.textMuted)),
+                  .copyWith(color: c.textMuted)),
           const SizedBox(height: 8),
           Text('Search addresses, landmarks, and places',
               style: MalateTypography.bodySmall),

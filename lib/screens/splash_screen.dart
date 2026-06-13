@@ -60,8 +60,9 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
     return Scaffold(
-      backgroundColor: MalateColors.midnight,
+      backgroundColor: c.midnight,
       body: Center(
         child: AnimatedBuilder(
           animation: _controller,
@@ -111,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen>
                     AppConfig.appTagline.toUpperCase(),
                     style: MalateTypography.labelSmall.copyWith(
                       letterSpacing: 2,
-                      color: MalateColors.textMuted,
+                      color: c.textMuted,
                     ),
                   ),
                   const SizedBox(height: 48),
@@ -128,7 +129,7 @@ class _SplashScreenState extends State<SplashScreen>
                   Text(
                     AppConfig.appVersion,
                     style: MalateTypography.labelSmall.copyWith(
-                      color: MalateColors.textDisabled,
+                      color: c.textDisabled,
                     ),
                   ),
                 ],

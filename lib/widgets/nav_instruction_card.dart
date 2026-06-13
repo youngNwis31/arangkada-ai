@@ -10,6 +10,7 @@ class NavInstructionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
     final step = engine.currentStep;
     if (step == null) return const SizedBox.shrink();
 
@@ -17,7 +18,7 @@ class NavInstructionCard extends StatelessWidget {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: MalateColors.asphalt,
+        color: c.asphalt,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: engine.state == NavState.offRoute
@@ -32,21 +33,22 @@ class NavInstructionCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (engine.state == NavState.offRoute)
-            _offRouteBanner()
+            _offRouteBanner(context)
           else
-            _stepRow(step),
+            _stepRow(context, step),
           const SizedBox(height: 16),
-          _statsRow(),
+          _statsRow(context),
           if (engine.nextStep != null) ...[
             const SizedBox(height: 12),
-            _nextStepHint(),
+            _nextStepHint(context),
           ],
         ],
       ),
     );
   }
 
-  Widget _offRouteBanner() {
+  Widget _offRouteBanner(BuildContext context) {
+    final c = MalateColors.of(context);
     return Row(
       children: [
         Container(
@@ -72,7 +74,7 @@ class NavInstructionCard extends StatelessWidget {
               Text(
                 'Bumalik sa route, rider!',
                 style: MalateTypography.bodyMedium
-                    .copyWith(color: MalateColors.textSecondary),
+                    .copyWith(color: c.textSecondary),
               ),
             ],
           ),
@@ -81,7 +83,8 @@ class NavInstructionCard extends StatelessWidget {
     );
   }
 
-  Widget _stepRow(step) {
+  Widget _stepRow(BuildContext context, step) {
+    final c = MalateColors.of(context);
     return Row(
       children: [
         Container(
@@ -115,7 +118,7 @@ class NavInstructionCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: MalateTypography.bodyMedium
-                    .copyWith(color: MalateColors.textPrimary),
+                    .copyWith(color: c.textPrimary),
               ),
             ],
           ),
@@ -124,7 +127,8 @@ class NavInstructionCard extends StatelessWidget {
     );
   }
 
-  Widget _statsRow() {
+  Widget _statsRow(BuildContext context) {
+    final c = MalateColors.of(context);
     final remainDist = engine.totalRemainingDistance;
     final distText = remainDist >= 1000
         ? '${(remainDist / 1000).toStringAsFixed(1)} km'
@@ -133,23 +137,26 @@ class NavInstructionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: MalateColors.midnight,
+        color: c.midnight,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _stat(Icons.schedule, engine.etaText, 'ETA'),
-          Container(width: 1, height: 24, color: MalateColors.sidewalk),
-          _stat(Icons.straighten, distText, 'LEFT'),
-          Container(width: 1, height: 24, color: MalateColors.sidewalk),
-          _stat(Icons.speed, '${(engine.speedMs * 3.6).toInt()} km/h', 'SPEED'),
+          _stat(context, Icons.schedule, engine.etaText, 'ETA'),
+          Container(width: 1, height: 24, color: c.sidewalk),
+          _stat(context, Icons.straighten, distText, 'LEFT'),
+          Container(width: 1, height: 24, color: c.sidewalk),
+          _stat(context, Icons.speed, '${(engine.speedMs * 3.6).toInt()} km/h',
+              'SPEED'),
         ],
       ),
     );
   }
 
-  Widget _stat(IconData icon, String value, String label) {
+  Widget _stat(
+      BuildContext context, IconData icon, String value, String label) {
+    final c = MalateColors.of(context);
     return Column(
       children: [
         Row(
@@ -160,7 +167,7 @@ class NavInstructionCard extends StatelessWidget {
             Text(
               value,
               style: MalateTypography.headlineSmall
-                  .copyWith(fontSize: 15, color: MalateColors.textPrimary),
+                  .copyWith(fontSize: 15, color: c.textPrimary),
             ),
           ],
         ),
@@ -170,12 +177,13 @@ class NavInstructionCard extends StatelessWidget {
     );
   }
 
-  Widget _nextStepHint() {
+  Widget _nextStepHint(BuildContext context) {
+    final c = MalateColors.of(context);
     final next = engine.nextStep!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: MalateColors.gutter,
+        color: c.gutter,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -183,7 +191,7 @@ class NavInstructionCard extends StatelessWidget {
           Text('THEN ', style: MalateTypography.labelSmall),
           Icon(
             _maneuverIcon(next.modifier, next.maneuverType),
-            color: MalateColors.textMuted,
+            color: c.textMuted,
             size: 16,
           ),
           const SizedBox(width: 6),
@@ -193,7 +201,7 @@ class NavInstructionCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: MalateTypography.bodySmall
-                  .copyWith(color: MalateColors.textSecondary),
+                  .copyWith(color: c.textSecondary),
             ),
           ),
         ],

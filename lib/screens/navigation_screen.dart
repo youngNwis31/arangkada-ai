@@ -73,8 +73,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: MalateColors.midnight,
+      backgroundColor: c.midnight,
       body: Consumer<NavigationProvider>(
         builder: (context, nav, _) {
           final engine = nav.navEngine;
@@ -93,7 +96,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 mapOptions: MapOptions(
                   pixelRatio: MediaQuery.of(context).devicePixelRatio,
                 ),
-                styleUri: AppConfig.mapboxStyleDark,
+                styleUri: isDark ? AppConfig.mapboxStyleDark : AppConfig.mapboxStyleLight,
                 viewport: CameraViewportState(
                   center: Point(
                     coordinates: Position(
@@ -143,7 +146,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                       engine.voiceEnabled ? Icons.volume_up : Icons.volume_off,
                       engine.voiceEnabled
                           ? MalateColors.cyberCyan
-                          : MalateColors.textMuted,
+                          : c.textMuted,
                       engine.toggleVoice,
                     ),
                     const SizedBox(height: 10),
@@ -163,15 +166,16 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   Widget _topStrip(OfflineNavEngine engine) {
+    final c = MalateColors.of(context);
     final street = engine.currentStreet;
     if (street.isEmpty) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: MalateColors.asphalt.withValues(alpha: 0.9),
+        color: c.asphalt.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: MalateColors.sidewalk),
+        border: Border.all(color: c.sidewalk),
       ),
       child: Row(
         children: [
@@ -183,7 +187,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: MalateTypography.headlineSmall
-                  .copyWith(color: MalateColors.textPrimary),
+                  .copyWith(color: c.textPrimary),
             ),
           ),
           Container(
@@ -204,11 +208,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   Widget _arrivedCard() {
+    final c = MalateColors.of(context);
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: MalateColors.asphalt,
+        color: c.asphalt,
         borderRadius: BorderRadius.circular(20),
         border:
             Border.all(color: MalateColors.neonMint.withValues(alpha: 0.4)),
@@ -246,13 +251,13 @@ class _NavigationScreenState extends State<NavigationScreen> {
               onPressed: _onExit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: MalateColors.neonMint,
-                foregroundColor: MalateColors.midnight,
+                foregroundColor: c.midnight,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
               child: Text('TAPOS NA',
                   style: MalateTypography.labelLarge
-                      .copyWith(color: MalateColors.midnight)),
+                      .copyWith(color: c.midnight)),
             ),
           ),
         ],
@@ -261,13 +266,14 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   Widget _controlButton(IconData icon, Color color, VoidCallback onTap) {
+    final c = MalateColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: MalateColors.asphalt.withValues(alpha: 0.9),
+          color: c.asphalt.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: color.withValues(alpha: 0.4)),
         ),

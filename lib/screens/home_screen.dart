@@ -63,6 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _pointManager?.deleteAll();
     if (nav.routes.isEmpty) return;
 
+    final c = MalateColors.of(context);
     for (int i = nav.routes.length - 1; i >= 0; i--) {
       final route = nav.routes[i];
       final isSelected = i == nav.selectedRouteIndex;
@@ -74,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
         geometry: LineString(coordinates: points),
         lineColor: isSelected
             ? MalateColors.neonMint.toARGB32()
-            : MalateColors.textMuted.toARGB32(),
+            : c.textMuted.toARGB32(),
         lineWidth: isSelected ? 6.0 : 3.0,
         lineOpacity: isSelected ? 1.0 : 0.4,
       ));
@@ -115,9 +116,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final connectivity = context.read<ConnectivityMonitor>();
+    final c = MalateColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: MalateColors.midnight,
+      backgroundColor: c.midnight,
       body: Consumer<NavigationProvider>(
         builder: (context, nav, _) {
           if (nav.routes.isNotEmpty) {
@@ -132,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 mapOptions: MapOptions(
                   pixelRatio: MediaQuery.of(context).devicePixelRatio,
                 ),
-                styleUri: AppConfig.mapboxStyleDark,
+                styleUri: isDark ? AppConfig.mapboxStyleDark : AppConfig.mapboxStyleLight,
                 viewport: CameraViewportState(
                   center: Point(
                     coordinates: Position(
@@ -242,11 +245,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             label: Text(
                               'START NAVIGATION',
                               style: MalateTypography.labelLarge
-                                  .copyWith(color: MalateColors.midnight),
+                                  .copyWith(color: c.midnight),
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: MalateColors.neonMint,
-                              foregroundColor: MalateColors.midnight,
+                              foregroundColor: c.midnight,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -326,6 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSearchBar(NavigationProvider nav) {
+    final c = MalateColors.of(context);
     return GestureDetector(
       onTap: () async {
         final result = await Navigator.push<Map<String, dynamic>>(
@@ -342,21 +346,21 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: MalateColors.asphalt,
+          color: c.asphalt,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: MalateColors.sidewalk),
+          border: Border.all(color: c.sidewalk),
         ),
         child: Row(
           children: [
-            const Icon(Icons.search, color: MalateColors.textMuted, size: 22),
+            Icon(Icons.search, color: c.textMuted, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 nav.destination?.name ?? 'Saan ka pupunta, rider?',
                 style: MalateTypography.bodyLarge.copyWith(
                   color: nav.destination != null
-                      ? MalateColors.textPrimary
-                      : MalateColors.textMuted,
+                      ? c.textPrimary
+                      : c.textMuted,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -368,8 +372,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   _polylineManager?.deleteAll();
                   _pointManager?.deleteAll();
                 },
-                child: const Icon(Icons.close,
-                    color: MalateColors.textMuted, size: 18),
+                child: Icon(Icons.close,
+                    color: c.textMuted, size: 18),
               ),
           ],
         ),
@@ -378,29 +382,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildIconButton(IconData icon, VoidCallback onTap) {
+    final c = MalateColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: MalateColors.asphalt,
+          color: c.asphalt,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: MalateColors.sidewalk),
+          border: Border.all(color: c.sidewalk),
         ),
-        child: Icon(icon, color: MalateColors.textSecondary, size: 22),
+        child: Icon(icon, color: c.textSecondary, size: 22),
       ),
     );
   }
 
   Widget _buildFab(IconData icon, Color color, VoidCallback onTap) {
+    final c = MalateColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: MalateColors.asphalt,
+          color: c.asphalt,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withValues(alpha: 0.4)),
           boxShadow: MalateColors.subtleGlow(color),

@@ -52,7 +52,7 @@ class MalateButton extends StatelessWidget {
         label: Text(label),
         style: ElevatedButton.styleFrom(
           backgroundColor: btnColor,
-          foregroundColor: MalateColors.midnight,
+          foregroundColor: MalateColors.of(context).midnight,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
