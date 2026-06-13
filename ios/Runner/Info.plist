@@ -55,7 +55,5 @@
 	<string>Arangkada AI uses speech recognition for hands-free voice commands.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Arangkada AI uses the microphone for voice hazard reporting.</string>
-	<key>MBXAccessToken</key>
-	<string>$(MAPBOX_ACCESS_TOKEN)</string>
 </dict>
 </plist>

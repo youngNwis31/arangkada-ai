@@ -274,14 +274,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
               if (!nav.hasRoute)
                 Positioned(
-                  bottom: 80,
+                  bottom: 0,
                   left: 0,
                   right: 0,
-                  child: const RideToggle(),
+                  child: SafeArea(
+                    top: false,
+                    child: const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: RideToggle(),
+                    ),
+                  ),
                 ),
 
               Positioned(
-                bottom: nav.hasRoute ? 340 : 30,
+                bottom: nav.hasRoute ? 340 : 110,
                 right: 16,
                 child: Column(
                   children: [

@@ -10,7 +10,7 @@ class AppConfig {
   static const String osmTileUrl =
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   static const String osmTileUrlDark =
-      'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png';
+      'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
   // OSRM Directions — free, no API key
   static const String osrmDirectionsUrl =

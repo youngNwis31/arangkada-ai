@@ -32,7 +32,8 @@ class SettingsScreen extends StatelessWidget {
             style: MalateTypography.neonAccent(MalateColors.neonMint)),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(
+            20, 20, 20, 20 + MediaQuery.of(context).padding.bottom),
         children: [
           // ── Appearance ──
           _sectionHeader(context, 'APPEARANCE'),
@@ -242,7 +243,7 @@ class SettingsScreen extends StatelessWidget {
                 Divider(color: c.sidewalk, height: 24),
                 _aboutRow('Version', AppConfig.appVersion),
                 Divider(color: c.sidewalk, height: 24),
-                _aboutRow('Stack', 'Flutter + Mapbox + Firebase'),
+                _aboutRow('Stack', 'Flutter + OSM + SQLite'),
                 Divider(color: c.sidewalk, height: 24),
                 _aboutRow('Budget', '₱0 — Free Tier Optimized'),
                 const SizedBox(height: 16),

@@ -6,6 +6,16 @@ import '../config/theme/malate_typography.dart';
 import '../models/ride_log_model.dart';
 import '../services/ride_logger.dart';
 
+IconData _platformIcon(RidePlatform p) => switch (p) {
+      RidePlatform.grab => Icons.local_taxi,
+      RidePlatform.foodPanda => Icons.fastfood,
+      RidePlatform.lalamove => Icons.local_shipping,
+      RidePlatform.angkas => Icons.two_wheeler,
+      RidePlatform.joyRide => Icons.directions_car,
+      RidePlatform.moveIt => Icons.delivery_dining,
+      RidePlatform.other => Icons.more_horiz,
+    };
+
 class RideToggle extends StatelessWidget {
   const RideToggle({super.key});
 
@@ -119,21 +129,19 @@ class RideToggle extends StatelessWidget {
   }
 
   Widget _platformSelector(BuildContext context, RideLogger logger) {
-    final c = MalateColors.of(context);
+    final brandColor = Color(logger.selectedPlatform.brandColorValue);
     return GestureDetector(
       onTap: () => _showPlatformPicker(context, logger),
       child: Container(
         width: 46,
         height: 46,
         decoration: BoxDecoration(
-          color: c.gutter,
+          color: brandColor.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: c.concrete),
+          border: Border.all(color: brandColor.withValues(alpha: 0.5)),
         ),
-        child: Center(
-          child: Text(logger.selectedPlatform.emoji,
-              style: const TextStyle(fontSize: 22)),
-        ),
+        child: Icon(_platformIcon(logger.selectedPlatform),
+            color: brandColor, size: 22),
       ),
     );
   }
@@ -159,6 +167,7 @@ class RideToggle extends StatelessWidget {
               runSpacing: 10,
               children: RidePlatform.values.map((p) {
                 final selected = p == logger.selectedPlatform;
+                final brandColor = Color(p.brandColorValue);
                 return GestureDetector(
                   onTap: () {
                     logger.selectPlatform(p);
@@ -169,22 +178,29 @@ class RideToggle extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: selected
-                          ? MalateColors.neonMint.withValues(alpha: 0.1)
+                          ? brandColor.withValues(alpha: 0.15)
                           : c.gutter,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: selected
-                            ? MalateColors.neonMint
+                            ? brandColor
                             : c.sidewalk,
                       ),
                     ),
-                    child: Text(
-                      '${p.emoji} ${p.label}',
-                      style: MalateTypography.bodyMedium.copyWith(
-                        color: selected
-                            ? MalateColors.neonMint
-                            : c.textSecondary,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_platformIcon(p), color: brandColor, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          p.label,
+                          style: MalateTypography.bodyMedium.copyWith(
+                            color: selected
+                                ? brandColor
+                                : c.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
