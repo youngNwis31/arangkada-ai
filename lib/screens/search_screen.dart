@@ -5,99 +5,14 @@ import '../config/theme/malate_typography.dart';
 import '../models/location_model.dart';
 import '../services/mapbox_service.dart';
 
-const _luzonPresets = <_CityGroup>[
-  _CityGroup('METRO MANILA', [
-    _City('Manila', 14.5995, 120.9842, 'Capital of the Philippines'),
-    _City('Quezon City', 14.6760, 121.0437, 'Largest city in Metro Manila'),
-    _City('Makati', 14.5547, 121.0244, 'Business district'),
-    _City('Taguig (BGC)', 14.5176, 121.0509, 'Bonifacio Global City'),
-    _City('Pasig', 14.5764, 121.0851, 'Ortigas Center'),
-    _City('Mandaluyong', 14.5794, 121.0359, 'Shopping capital'),
-    _City('Pasay', 14.5378, 121.0014, 'MOA, NAIA area'),
-    _City('Parañaque', 14.4793, 121.0198, 'Entertainment City'),
-    _City('Las Piñas', 14.4445, 120.9939, 'South Metro Manila'),
-    _City('Muntinlupa', 14.4081, 121.0415, 'Alabang, Filinvest'),
-    _City('Marikina', 14.6507, 121.1029, 'Shoe capital'),
-    _City('Caloocan', 14.6488, 120.9840, 'North Metro Manila'),
-    _City('Valenzuela', 14.6942, 120.9608, 'Industrial city'),
-    _City('San Juan', 14.6019, 121.0355, 'Smallest city'),
-    _City('Navotas', 14.6617, 120.9417, 'Fish port'),
-    _City('Malabon', 14.6625, 120.9575, 'Heritage city'),
-  ]),
-  _CityGroup('CENTRAL LUZON', [
-    _City('Angeles City', 15.1450, 120.5887, 'Clark, Pampanga'),
-    _City('San Fernando', 15.0286, 120.6882, 'Capital of Pampanga'),
-    _City('Olongapo', 14.8292, 120.2828, 'Subic Bay area'),
-    _City('Tarlac City', 15.4365, 120.5966, 'Tarlac province'),
-    _City('Cabanatuan', 15.4869, 120.9681, 'Nueva Ecija'),
-    _City('Malolos', 14.8433, 120.8114, 'Capital of Bulacan'),
-    _City('Meycauayan', 14.7371, 120.9607, 'Bulacan'),
-    _City('Balanga', 14.6762, 120.5362, 'Capital of Bataan'),
-  ]),
-  _CityGroup('CALABARZON', [
-    _City('Antipolo', 14.5860, 121.1761, 'Rizal province'),
-    _City('Calamba', 14.2114, 121.1653, 'Laguna, birthplace of Rizal'),
-    _City('Batangas City', 13.7565, 121.0583, 'Port city'),
-    _City('Lipa', 13.9411, 121.1625, 'Batangas'),
-    _City('Lucena', 13.9373, 121.6170, 'Quezon province'),
-    _City('San Pablo', 14.0685, 121.3254, 'City of Seven Lakes'),
-    _City('Dasmariñas', 14.3294, 120.9367, 'Cavite'),
-    _City('Bacoor', 14.4624, 120.9645, 'Cavite'),
-    _City('Imus', 14.4297, 120.9368, 'Cavite'),
-    _City('Santa Rosa', 14.3122, 121.1115, 'Laguna, Enchanted Kingdom'),
-    _City('Biñan', 14.3346, 121.0813, 'Laguna'),
-    _City('Cavite City', 14.4836, 120.8956, 'Historical city'),
-  ]),
-  _CityGroup('ILOCOS REGION', [
-    _City('Laoag', 18.1979, 120.5936, 'Ilocos Norte'),
-    _City('Vigan', 17.5747, 120.3869, 'Heritage city, Ilocos Sur'),
-    _City('San Fernando', 16.6159, 120.3209, 'La Union, surfing capital'),
-    _City('Dagupan', 16.0433, 120.3374, 'Pangasinan'),
-    _City('Alaminos', 16.1554, 119.9811, 'Hundred Islands'),
-    _City('Urdaneta', 15.9762, 120.5712, 'Pangasinan'),
-  ]),
-  _CityGroup('CORDILLERA', [
-    _City('Baguio', 16.4023, 120.5960, 'Summer Capital of the PH'),
-    _City('La Trinidad', 16.4564, 120.5870, 'Strawberry capital, Benguet'),
-    _City('Tabuk', 17.4189, 121.4443, 'Kalinga province'),
-    _City('Bontoc', 17.0874, 120.9778, 'Mountain Province'),
-  ]),
-  _CityGroup('CAGAYAN VALLEY', [
-    _City('Tuguegarao', 17.6132, 121.7270, 'Hottest city in PH'),
-    _City('Santiago', 16.6892, 121.5487, 'Isabela'),
-    _City('Cauayan', 16.9315, 121.7731, 'Isabela'),
-    _City('Ilagan', 17.1485, 121.8892, 'Capital of Isabela'),
-  ]),
-  _CityGroup('BICOL REGION', [
-    _City('Naga', 13.6192, 123.1814, 'CamSur, Peñafrancia'),
-    _City('Legazpi', 13.1391, 123.7438, 'Mayon Volcano view'),
-    _City('Sorsogon City', 12.9742, 124.0049, 'Whale shark watching'),
-    _City('Daet', 14.1122, 122.9553, 'Camarines Norte, surfing'),
-    _City('Tabaco', 13.3587, 123.7345, 'Albay'),
-    _City('Iriga', 13.4213, 123.4116, 'CamSur'),
-  ]),
+const _suggestions = <LocationModel>[
+  LocationModel(latitude: 14.5547, longitude: 121.0244, name: 'Makati', address: 'Business district, Metro Manila'),
+  LocationModel(latitude: 14.5176, longitude: 121.0509, name: 'BGC Taguig', address: 'Bonifacio Global City'),
+  LocationModel(latitude: 14.6760, longitude: 121.0437, name: 'Quezon City', address: 'Largest city in Metro Manila'),
+  LocationModel(latitude: 14.5764, longitude: 121.0851, name: 'Ortigas Pasig', address: 'Ortigas Center, Pasig'),
+  LocationModel(latitude: 14.5378, longitude: 121.0014, name: 'Pasay MOA', address: 'Mall of Asia area'),
+  LocationModel(latitude: 16.4023, longitude: 120.5960, name: 'Baguio', address: 'Summer Capital of the Philippines'),
 ];
-
-class _CityGroup {
-  final String region;
-  final List<_City> cities;
-  const _CityGroup(this.region, this.cities);
-}
-
-class _City {
-  final String name;
-  final double lat;
-  final double lng;
-  final String subtitle;
-  const _City(this.name, this.lat, this.lng, this.subtitle);
-
-  LocationModel toLocation() => LocationModel(
-        latitude: lat,
-        longitude: lng,
-        name: name,
-        address: subtitle,
-      );
-}
 
 class SearchScreen extends StatefulWidget {
   final LocationModel? currentLocation;
@@ -108,39 +23,53 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final _controller = TextEditingController();
-  final _focus = FocusNode();
+  final _fromController = TextEditingController();
+  final _toController = TextEditingController();
+  final _fromFocus = FocusNode();
+  final _toFocus = FocusNode();
+
+  LocationModel? _selectedOrigin;
+  LocationModel? _selectedDestination;
+
   List<LocationModel> _results = [];
   bool _searching = false;
   Timer? _debounce;
+  bool _editingFrom = false;
 
   @override
   void initState() {
     super.initState();
-    _focus.requestFocus();
+    if (widget.currentLocation != null) {
+      _selectedOrigin = widget.currentLocation;
+      _fromController.text = widget.currentLocation!.name ?? 'Your location';
+    } else {
+      _fromController.text = 'Your location';
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _toFocus.requestFocus();
+    });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _focus.dispose();
+    _fromController.dispose();
+    _toController.dispose();
+    _fromFocus.dispose();
+    _toFocus.dispose();
     _debounce?.cancel();
     super.dispose();
   }
 
   void _onChanged(String q) {
     _debounce?.cancel();
+    if (q.trim().length < 2) {
+      setState(() { _results = []; _searching = false; });
+      return;
+    }
     _debounce = Timer(const Duration(milliseconds: 400), () => _search(q));
   }
 
   Future<void> _search(String q) async {
-    if (q.trim().length < 2) {
-      setState(() {
-        _results = [];
-        _searching = false;
-      });
-      return;
-    }
     setState(() => _searching = true);
     try {
       final r = await MapboxService.searchPlaces(
@@ -155,7 +84,34 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _selectLocation(LocationModel loc) {
-    Navigator.pop(context, {'location': loc});
+    if (_editingFrom) {
+      _selectedOrigin = loc;
+      _fromController.text = loc.name ?? loc.address ?? 'Selected';
+      _fromFocus.unfocus();
+      setState(() { _results = []; _editingFrom = false; });
+      if (_selectedDestination == null) {
+        _toFocus.requestFocus();
+      } else {
+        _navigateBack();
+      }
+    } else {
+      _selectedDestination = loc;
+      _toController.text = loc.name ?? loc.address ?? 'Selected';
+      _toFocus.unfocus();
+      setState(() => _results = []);
+      _navigateBack();
+    }
+  }
+
+  void _navigateBack() {
+    if (_selectedDestination == null) return;
+    final result = <String, dynamic>{
+      'location': _selectedDestination!,
+    };
+    if (_selectedOrigin != null) {
+      result['origin'] = _selectedOrigin!;
+    }
+    Navigator.pop(context, result);
   }
 
   @override
@@ -169,159 +125,216 @@ class _SearchScreenState extends State<SearchScreen> {
           icon: Icon(Icons.arrow_back, color: c.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('SET DESTINATION',
+        title: Text('SET ROUTE',
             style: MalateTypography.neonAccent(MalateColors.cyberCyan)),
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              controller: _controller,
-              focusNode: _focus,
-              onChanged: _onChanged,
-              style: MalateTypography.bodyLarge.copyWith(color: c.textPrimary),
-              decoration: InputDecoration(
-                hintText: 'Search places in Luzon...',
-                prefixIcon: const Icon(Icons.location_on,
-                    color: MalateColors.neonMint),
-                suffixIcon: _controller.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Icons.clear, color: c.textMuted, size: 18),
-                        onPressed: () {
-                          _controller.clear();
-                          setState(() => _results = []);
-                        },
-                      )
-                    : null,
-              ),
-            ),
-          ),
+          _routeFields(),
           if (_searching)
             const Padding(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.all(16),
               child: CircularProgressIndicator(
                   color: MalateColors.neonMint, strokeWidth: 2),
             ),
           Expanded(
-            child: _controller.text.isNotEmpty || _results.isNotEmpty
-                ? _searchResults()
-                : _presetsList(),
+            child: _results.isNotEmpty
+                ? _searchResultsList()
+                : (_toController.text.isNotEmpty && _results.isEmpty && !_searching)
+                    ? _noResults()
+                    : _suggestionsList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _searchResults() {
+  Widget _routeFields() {
     final c = MalateColors.of(context);
-    if (_results.isEmpty && !_searching) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, size: 48, color: c.textDisabled),
-            const SizedBox(height: 12),
-            Text('Walang nakita',
-                style: MalateTypography.headlineSmall
-                    .copyWith(color: c.textMuted)),
-            const SizedBox(height: 6),
-            Text('Try a different search or pick from the list',
-                style: MalateTypography.bodySmall),
-          ],
-        ),
-      );
-    }
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.asphalt,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.sidewalk),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Column(
+              children: [
+                Container(
+                  width: 12, height: 12,
+                  decoration: BoxDecoration(
+                    color: MalateColors.neonMint,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+                Container(
+                  width: 2, height: 32,
+                  color: c.textMuted.withValues(alpha: 0.3),
+                ),
+                Icon(Icons.location_on, color: MalateColors.hazardRed, size: 16),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              children: [
+                TextField(
+                  controller: _fromController,
+                  focusNode: _fromFocus,
+                  onTap: () => setState(() => _editingFrom = true),
+                  onChanged: (q) {
+                    _editingFrom = true;
+                    _onChanged(q);
+                  },
+                  style: MalateTypography.bodyMedium
+                      .copyWith(color: c.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: 'From where?',
+                    hintStyle: MalateTypography.bodyMedium
+                        .copyWith(color: c.textMuted),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    filled: true,
+                    fillColor: c.gutter,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    suffixIcon: _fromController.text.isNotEmpty &&
+                            _fromController.text != 'Your location'
+                        ? IconButton(
+                            icon: Icon(Icons.clear, size: 16, color: c.textMuted),
+                            onPressed: () {
+                              _fromController.text = 'Your location';
+                              _selectedOrigin = widget.currentLocation;
+                              setState(() => _results = []);
+                            },
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _toController,
+                  focusNode: _toFocus,
+                  onTap: () => setState(() => _editingFrom = false),
+                  onChanged: (q) {
+                    _editingFrom = false;
+                    _onChanged(q);
+                  },
+                  style: MalateTypography.bodyMedium
+                      .copyWith(color: c.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: 'Where to, rider?',
+                    hintStyle: MalateTypography.bodyMedium
+                        .copyWith(color: c.textMuted),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    filled: true,
+                    fillColor: c.gutter,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    suffixIcon: _toController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear, size: 16, color: c.textMuted),
+                            onPressed: () {
+                              _toController.clear();
+                              _selectedDestination = null;
+                              setState(() => _results = []);
+                            },
+                          )
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _searchResultsList() {
+    final c = MalateColors.of(context);
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       itemCount: _results.length,
-      separatorBuilder: (_, __) => Divider(color: c.sidewalk),
+      separatorBuilder: (_, __) =>
+          Divider(color: c.sidewalk, indent: 72),
       itemBuilder: (_, i) => _locationTile(_results[i]),
     );
   }
 
-  Widget _presetsList() {
+  Widget _noResults() {
     final c = MalateColors.of(context);
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-      itemCount: _luzonPresets.length,
-      itemBuilder: (_, groupIndex) {
-        final group = _luzonPresets[groupIndex];
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (groupIndex > 0) const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                children: [
-                  Icon(Icons.map, size: 14,
-                      color: MalateColors.electricAmber.withValues(alpha: 0.7)),
-                  const SizedBox(width: 6),
-                  Text(
-                    group.region,
-                    style: MalateTypography.neonAccent(c.textMuted)
-                        .copyWith(fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: group.cities.map((city) {
-                return GestureDetector(
-                  onTap: () => _selectLocation(city.toLocation()),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: c.asphalt,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: c.sidewalk),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.location_city,
-                            size: 14,
-                            color: MalateColors.neonMint.withValues(alpha: 0.7)),
-                        const SizedBox(width: 6),
-                        Text(
-                          city.name,
-                          style: MalateTypography.bodySmall
-                              .copyWith(color: c.textPrimary, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        );
-      },
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 48, color: c.textDisabled),
+          const SizedBox(height: 12),
+          Text('Walang nakita',
+              style: MalateTypography.headlineSmall
+                  .copyWith(color: c.textMuted)),
+          const SizedBox(height: 6),
+          Text('Try searching for a street, landmark, or city',
+              style: MalateTypography.bodySmall),
+        ],
+      ),
+    );
+  }
+
+  Widget _suggestionsList() {
+    final c = MalateColors.of(context);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            'POPULAR DESTINATIONS',
+            style: MalateTypography.neonAccent(c.textMuted)
+                .copyWith(fontSize: 11),
+          ),
+        ),
+        ..._suggestions.map((loc) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: _locationTile(loc),
+            )),
+      ],
     );
   }
 
   Widget _locationTile(LocationModel place) {
+    final c = MalateColors.of(context);
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       leading: Container(
-        width: 44,
-        height: 44,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           color: MalateColors.neonMint.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: MalateColors.neonMint.withValues(alpha: 0.2)),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: const Icon(Icons.location_on,
-            color: MalateColors.neonMint, size: 22),
+            color: MalateColors.neonMint, size: 20),
       ),
       title: Text(
         place.name ?? 'Unknown',
-        style: MalateTypography.headlineSmall.copyWith(fontSize: 15),
+        style: MalateTypography.headlineSmall
+            .copyWith(fontSize: 14, color: c.textPrimary),
       ),
       subtitle: place.address != null
           ? Text(

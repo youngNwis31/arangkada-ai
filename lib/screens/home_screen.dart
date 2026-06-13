@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../config/theme/malate_colors.dart';
+import '../models/location_model.dart';
 import '../config/theme/malate_typography.dart';
 import '../core/offline/connectivity_monitor.dart';
 import '../services/navigation_provider.dart';
@@ -205,21 +206,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
               if (nav.error != null && nav.routes.isEmpty)
                 Positioned(
-                  bottom: 100,
+                  bottom: 200,
                   left: 20,
                   right: 20,
                   child: Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: MalateColors.hazardRed.withValues(alpha: 0.1),
+                      color: c.asphalt,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: MalateColors.hazardRed.withValues(alpha: 0.3)),
+                          color: MalateColors.hazardRed.withValues(alpha: 0.4)),
                     ),
-                    child: Text(
-                      nav.error!,
-                      style: MalateTypography.bodyMedium
-                          .copyWith(color: MalateColors.hazardRed),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            color: MalateColors.hazardRed, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            nav.error!,
+                            style: MalateTypography.bodySmall
+                                .copyWith(color: MalateColors.hazardRed),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => nav.clearRoute(),
+                          child: Icon(Icons.close,
+                              color: c.textMuted, size: 16),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -335,7 +351,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
         if (result != null && mounted) {
-          nav.setDestination(result['location']);
+          final origin = result['origin'] as LocationModel?;
+          final dest = result['location'] as LocationModel;
+          if (origin != null) {
+            nav.setRoute(from: origin, to: dest);
+          } else {
+            nav.setDestination(dest);
+          }
         }
       },
       child: Container(
