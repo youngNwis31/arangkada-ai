@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../config/theme/malate_colors.dart';
@@ -24,9 +25,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  MapboxMap? _mapboxMap;
-  PolylineAnnotationManager? _polylineManager;
-  PointAnnotationManager? _pointManager;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -36,51 +35,29 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _onMapCreated(MapboxMap map) async {
-    _mapboxMap = map;
-    _polylineManager = await map.annotations.createPolylineAnnotationManager();
-    _pointManager = await map.annotations.createPointAnnotationManager();
-
-    if (!mounted) return;
-    final nav = context.read<NavigationProvider>();
-    if (nav.currentLocation != null) {
-      _flyTo(nav.currentLocation!.latitude, nav.currentLocation!.longitude);
-    }
-  }
-
   void _flyTo(double lat, double lng) {
-    _mapboxMap?.flyTo(
-      CameraOptions(
-        center: Point(coordinates: Position(lng, lat)),
-        zoom: AppConfig.defaultZoom,
-      ),
-      MapAnimationOptions(duration: 800),
-    );
+    _mapController.move(LatLng(lat, lng), AppConfig.defaultZoom);
   }
 
-  void _drawRoutes(NavigationProvider nav) async {
+  List<Polyline> _buildPolylines(NavigationProvider nav) {
     final c = MalateColors.of(context);
-    await _polylineManager?.deleteAll();
-    await _pointManager?.deleteAll();
-    if (nav.routes.isEmpty) return;
+    final polylines = <Polyline>[];
     for (int i = nav.routes.length - 1; i >= 0; i--) {
       final route = nav.routes[i];
       final isSelected = i == nav.selectedRouteIndex;
       final points = route.coordinates
-          .map((c) => Position(c[0], c[1]))
+          .map((coord) => LatLng(coord[1], coord[0]))
           .toList();
 
-      await _polylineManager?.create(PolylineAnnotationOptions(
-        geometry: LineString(coordinates: points),
-        lineColor: isSelected
-            ? MalateColors.neonMint.toARGB32()
-            : c.textMuted.toARGB32(),
-        lineWidth: isSelected ? 6.0 : 3.0,
-        lineOpacity: isSelected ? 1.0 : 0.4,
+      polylines.add(Polyline(
+        points: points,
+        color: isSelected
+            ? MalateColors.neonMint
+            : c.textMuted.withValues(alpha: 0.4),
+        strokeWidth: isSelected ? 6.0 : 3.0,
       ));
     }
-
-    _fitBounds(nav);
+    return polylines;
   }
 
   void _fitBounds(NavigationProvider nav) {
@@ -88,28 +65,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final o = nav.currentLocation!;
     final d = nav.destination!;
 
-    final swLat = o.latitude < d.latitude ? o.latitude : d.latitude;
-    final swLng = o.longitude < d.longitude ? o.longitude : d.longitude;
-    final neLat = o.latitude > d.latitude ? o.latitude : d.latitude;
-    final neLng = o.longitude > d.longitude ? o.longitude : d.longitude;
+    final bounds = LatLngBounds(
+      LatLng(
+        o.latitude < d.latitude ? o.latitude : d.latitude,
+        o.longitude < d.longitude ? o.longitude : d.longitude,
+      ),
+      LatLng(
+        o.latitude > d.latitude ? o.latitude : d.latitude,
+        o.longitude > d.longitude ? o.longitude : d.longitude,
+      ),
+    );
 
-    _mapboxMap
-        ?.cameraForCoordinateBounds(
-          CoordinateBounds(
-            southwest:
-                Point(coordinates: Position(swLng - 0.01, swLat - 0.01)),
-            northeast:
-                Point(coordinates: Position(neLng + 0.01, neLat + 0.01)),
-            infiniteBounds: false,
-          ),
-          MbxEdgeInsets(top: 120, left: 50, bottom: 320, right: 50),
-          null,
-          null,
-          null,
-          null,
-        )
-        .then((cam) =>
-            _mapboxMap?.flyTo(cam, MapAnimationOptions(duration: 800)));
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: bounds,
+        padding: const EdgeInsets.fromLTRB(50, 120, 50, 320),
+      ),
+    );
   }
 
   @override
@@ -123,31 +95,69 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Consumer<NavigationProvider>(
         builder: (context, nav, _) {
           if (nav.routes.isNotEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) => _drawRoutes(nav));
+            WidgetsBinding.instance
+                .addPostFrameCallback((_) => _fitBounds(nav));
           }
 
           return Stack(
             children: [
-              // ── Map ──
-              MapWidget(
-                key: const ValueKey('arangkada_map'),
-                mapOptions: MapOptions(
-                  pixelRatio: MediaQuery.of(context).devicePixelRatio,
-                ),
-                styleUri: isDark ? AppConfig.mapboxStyleDark : AppConfig.mapboxStyleLight,
-                viewport: CameraViewportState(
-                  center: Point(
-                    coordinates: Position(
-                      nav.currentLocation?.longitude ?? AppConfig.defaultLng,
-                      nav.currentLocation?.latitude ?? AppConfig.defaultLat,
-                    ),
+              FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: LatLng(
+                    nav.currentLocation?.latitude ?? AppConfig.defaultLat,
+                    nav.currentLocation?.longitude ?? AppConfig.defaultLng,
                   ),
-                  zoom: AppConfig.defaultZoom,
+                  initialZoom: AppConfig.defaultZoom,
                 ),
-                onMapCreated: _onMapCreated,
+                children: [
+                  TileLayer(
+                    urlTemplate: isDark
+                        ? AppConfig.osmTileUrlDark
+                        : AppConfig.osmTileUrl,
+                    userAgentPackageName: 'com.arangkada.arangkadaAi',
+                  ),
+                  if (nav.routes.isNotEmpty)
+                    PolylineLayer(polylines: _buildPolylines(nav)),
+                  if (nav.currentLocation != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: LatLng(
+                            nav.currentLocation!.latitude,
+                            nav.currentLocation!.longitude,
+                          ),
+                          width: 24,
+                          height: 24,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: MalateColors.neonMint,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                              boxShadow: MalateColors.subtleGlow(
+                                  MalateColors.neonMint),
+                            ),
+                          ),
+                        ),
+                        if (nav.destination != null)
+                          Marker(
+                            point: LatLng(
+                              nav.destination!.latitude,
+                              nav.destination!.longitude,
+                            ),
+                            width: 32,
+                            height: 32,
+                            child: const Icon(
+                              Icons.location_on,
+                              color: MalateColors.hazardRed,
+                              size: 32,
+                            ),
+                          ),
+                      ],
+                    ),
+                ],
               ),
 
-              // ── Top Bar: Search + Signal ──
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -185,7 +195,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // ── Loading ──
               if (nav.isLoading)
                 Center(
                   child: CircularProgressIndicator(
@@ -194,7 +203,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-              // ── Error ──
               if (nav.error != null && nav.routes.isEmpty)
                 Positioned(
                   bottom: 100,
@@ -216,7 +224,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-              // ── Route Info Bottom Sheet ──
               if (nav.routes.isNotEmpty)
                 Positioned(
                   bottom: 0,
@@ -225,7 +232,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Start Navigation button
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                         child: SizedBox(
@@ -266,7 +272,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-              // ── Ride Toggle (when no route shown) ──
               if (!nav.hasRoute)
                 Positioned(
                   bottom: 80,
@@ -275,7 +280,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: const RideToggle(),
                 ),
 
-              // ── FABs ──
               Positioned(
                 bottom: nav.hasRoute ? 340 : 30,
                 right: 16,
@@ -284,37 +288,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildFab(
                         Icons.account_balance_wallet, MalateColors.electricAmber,
                         () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const EarningsScreen()),
-                      );
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const EarningsScreen()));
                     }),
                     const SizedBox(height: 10),
                     _buildFab(Icons.smart_toy, MalateColors.cyberCyan, () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const AiAssistantScreen()),
-                      );
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const AiAssistantScreen()));
                     }),
                     const SizedBox(height: 10),
-                    _buildFab(Icons.warning_amber_rounded,
-                        MalateColors.electricAmber, () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => HazardReportScreen(
-                            currentLocation: nav.currentLocation,
-                          ),
-                        ),
-                      );
+                    _buildFab(Icons.warning_amber_rounded, MalateColors.electricAmber, () {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => HazardReportScreen(currentLocation: nav.currentLocation),
+                      ));
                     }),
                     const SizedBox(height: 10),
                     _buildFab(Icons.my_location, MalateColors.neonMint, () {
                       if (nav.currentLocation != null) {
-                        _flyTo(nav.currentLocation!.latitude,
-                            nav.currentLocation!.longitude);
+                        _flyTo(nav.currentLocation!.latitude, nav.currentLocation!.longitude);
                       }
                     }),
                   ],
@@ -334,8 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final result = await Navigator.push<Map<String, dynamic>>(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                SearchScreen(currentLocation: nav.currentLocation),
+            builder: (_) => SearchScreen(currentLocation: nav.currentLocation),
           ),
         );
         if (result != null && mounted) {
@@ -357,22 +347,15 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 nav.destination?.name ?? 'Saan ka pupunta, rider?',
                 style: MalateTypography.bodyLarge.copyWith(
-                  color: nav.destination != null
-                      ? c.textPrimary
-                      : c.textMuted,
+                  color: nav.destination != null ? c.textPrimary : c.textMuted,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             if (nav.destination != null)
               GestureDetector(
-                onTap: () {
-                  nav.clearRoute();
-                  _polylineManager?.deleteAll();
-                  _pointManager?.deleteAll();
-                },
-                child: Icon(Icons.close,
-                    color: c.textMuted, size: 18),
+                onTap: () => nav.clearRoute(),
+                child: Icon(Icons.close, color: c.textMuted, size: 18),
               ),
           ],
         ),

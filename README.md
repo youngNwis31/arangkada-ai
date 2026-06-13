@@ -19,7 +19,9 @@ A Flutter-based navigation app built for Filipino riders on platforms like Grab,
 | Layer | Technology |
 |-------|-----------|
 | Framework | Flutter (Dart) |
-| Maps | Mapbox Maps Flutter SDK |
+| Maps | OpenStreetMap (flutter_map) — free, no API key |
+| Routing | OSRM (Open Source Routing Machine) — free |
+| Geocoding | Nominatim — free |
 | Database | SQLite (sqflite) — offline-first |
 | State | Provider (ChangeNotifier) |
 | Theme | ThemeExtension pattern |
@@ -29,12 +31,7 @@ A Flutter-based navigation app built for Filipino riders on platforms like Grab,
 ## Setup
 
 1. Install [Flutter SDK](https://docs.flutter.dev/get-started/install)
-2. Get a free [Mapbox Access Token](https://account.mapbox.com/)
-3. Add your token in `lib/config/app_config.dart`:
-   ```dart
-   static const String mapboxAccessToken = 'YOUR_TOKEN_HERE';
-   ```
-4. Run the app:
+2. Run the app — no API keys needed:
    ```bash
    flutter pub get
    flutter run
@@ -48,7 +45,7 @@ lib/
   core/            # Database, connectivity, battery saver
   models/          # Data models (route, hazard, ride log, location)
   screens/         # 8 screens (home, nav, search, earnings, etc.)
-  services/        # Business logic, providers, AI, Mapbox API
+  services/        # Business logic, providers, AI, map services
   widgets/         # Reusable UI components
   main.dart        # App entry point with MultiProvider
 ```
@@ -57,7 +54,7 @@ lib/
 
 - **41 Dart files** | ~18,500 lines of code
 - **0 analysis errors**
-- **v0.02** — Light/Dark theme system
+- **v0.03** — Migrated to OpenStreetMap (100% free, no credit card)
 
 ## Developer
 

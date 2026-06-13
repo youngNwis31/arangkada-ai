@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../config/theme/malate_colors.dart';
@@ -16,9 +17,7 @@ class NavigationScreen extends StatefulWidget {
 }
 
 class _NavigationScreenState extends State<NavigationScreen> {
-  MapboxMap? _mapboxMap;
-  PolylineAnnotationManager? _polylineManager;
-  bool _routeDrawn = false;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -28,41 +27,30 @@ class _NavigationScreenState extends State<NavigationScreen> {
     });
   }
 
-  void _onMapCreated(MapboxMap map) async {
-    _mapboxMap = map;
-    _polylineManager = await map.annotations.createPolylineAnnotationManager();
-    _drawRoute();
-  }
-
-  void _drawRoute() async {
-    if (_routeDrawn || _polylineManager == null) return;
-    final nav = context.read<NavigationProvider>();
+  List<Polyline> _buildRoutePolyline(NavigationProvider nav) {
     final route = nav.navEngine.route ?? nav.selectedRoute;
-    if (route == null) return;
+    if (route == null) return [];
 
-    final points =
-        route.coordinates.map((c) => Position(c[0], c[1])).toList();
+    final points = route.coordinates
+        .map((c) => LatLng(c[1], c[0]))
+        .toList();
 
-    await _polylineManager!.create(PolylineAnnotationOptions(
-      geometry: LineString(coordinates: points),
-      lineColor: MalateColors.neonMint.toARGB32(),
-      lineWidth: 7.0,
-      lineOpacity: 1.0,
-    ));
-    _routeDrawn = true;
+    return [
+      Polyline(
+        points: points,
+        color: MalateColors.neonMint,
+        strokeWidth: 7.0,
+      ),
+    ];
   }
 
   void _followRider(NavigationProvider nav) {
     final pos = nav.navEngine.lastPosition;
-    if (pos == null || _mapboxMap == null) return;
-    _mapboxMap!.flyTo(
-      CameraOptions(
-        center: Point(coordinates: Position(pos.longitude, pos.latitude)),
-        zoom: 17.0,
-        bearing: pos.heading.isNaN ? 0 : pos.heading,
-        pitch: 50,
-      ),
-      MapAnimationOptions(duration: 600),
+    if (pos == null) return;
+    _mapController.moveAndRotate(
+      LatLng(pos.latitude, pos.longitude),
+      17.0,
+      pos.heading.isNaN ? 0 : pos.heading,
     );
   }
 
@@ -85,31 +73,53 @@ class _NavigationScreenState extends State<NavigationScreen> {
           if (engine.isNavigating && engine.lastPosition != null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _followRider(nav);
-              if (!_routeDrawn) _drawRoute();
             });
           }
 
           return Stack(
             children: [
-              MapWidget(
-                key: const ValueKey('nav_map'),
-                mapOptions: MapOptions(
-                  pixelRatio: MediaQuery.of(context).devicePixelRatio,
-                ),
-                styleUri: isDark ? AppConfig.mapboxStyleDark : AppConfig.mapboxStyleLight,
-                viewport: CameraViewportState(
-                  center: Point(
-                    coordinates: Position(
-                      nav.currentLocation?.longitude ?? AppConfig.defaultLng,
-                      nav.currentLocation?.latitude ?? AppConfig.defaultLat,
-                    ),
+              FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: LatLng(
+                    nav.currentLocation?.latitude ?? AppConfig.defaultLat,
+                    nav.currentLocation?.longitude ?? AppConfig.defaultLng,
                   ),
-                  zoom: 17.0,
+                  initialZoom: 17.0,
                 ),
-                onMapCreated: _onMapCreated,
+                children: [
+                  TileLayer(
+                    urlTemplate: isDark
+                        ? AppConfig.osmTileUrlDark
+                        : AppConfig.osmTileUrl,
+                    userAgentPackageName: 'com.arangkada.arangkadaAi',
+                  ),
+                  PolylineLayer(polylines: _buildRoutePolyline(nav)),
+                  if (engine.lastPosition != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: LatLng(
+                            engine.lastPosition!.latitude,
+                            engine.lastPosition!.longitude,
+                          ),
+                          width: 28,
+                          height: 28,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: MalateColors.neonMint,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                              boxShadow: MalateColors.neonGlow(
+                                  MalateColors.neonMint, intensity: 0.4),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
               ),
 
-              // Top strip: current street
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -117,7 +127,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 ),
               ),
 
-              // Bottom: instruction card
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -136,7 +145,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 ),
               ),
 
-              // Exit / voice toggle buttons
               Positioned(
                 top: MediaQuery.of(context).padding.top + 60,
                 right: 16,
@@ -215,8 +223,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
       decoration: BoxDecoration(
         color: c.asphalt,
         borderRadius: BorderRadius.circular(20),
-        border:
-            Border.all(color: MalateColors.neonMint.withValues(alpha: 0.4)),
+        border: Border.all(color: MalateColors.neonMint.withValues(alpha: 0.4)),
         boxShadow: MalateColors.neonGlow(MalateColors.neonMint, intensity: 0.3),
       ),
       child: Column(
@@ -229,8 +236,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
               color: MalateColors.neonMint.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child:
-                const Icon(Icons.flag, color: MalateColors.neonMint, size: 36),
+            child: const Icon(Icons.flag, color: MalateColors.neonMint, size: 36),
           ),
           const SizedBox(height: 16),
           Text(
@@ -256,8 +262,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                     borderRadius: BorderRadius.circular(14)),
               ),
               child: Text('TAPOS NA',
-                  style: MalateTypography.labelLarge
-                      .copyWith(color: c.midnight)),
+                  style: MalateTypography.labelLarge.copyWith(color: c.midnight)),
             ),
           ),
         ],
@@ -280,11 +285,5 @@ class _NavigationScreenState extends State<NavigationScreen> {
         child: Icon(icon, color: color, size: 22),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _polylineManager = null;
-    super.dispose();
   }
 }

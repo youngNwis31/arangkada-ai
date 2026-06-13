@@ -2,20 +2,23 @@ class AppConfig {
   AppConfig._();
 
   static const String appName = 'Arangkada AI';
-  static const String appVersion = 'v0.02';
+  static const String appVersion = 'v0.03';
   static const String developer = 'James Earl Medrano';
   static const String appTagline = 'Your 24/7 Rider Road Assistant';
 
-  // Mapbox — Replace with your free token from mapbox.com
-  static const String mapboxAccessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
-  static const String mapboxStyleDark =
-      'mapbox://styles/mapbox/navigation-night-v1';
-  static const String mapboxStyleLight =
-      'mapbox://styles/mapbox/navigation-day-v1';
-  static const String mapboxDirectionsUrl =
-      'https://api.mapbox.com/directions/v5/mapbox';
-  static const String mapboxGeocodingUrl =
-      'https://api.mapbox.com/geocoding/v5/mapbox.places';
+  // OpenStreetMap — free, no API key required
+  static const String osmTileUrl =
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  static const String osmTileUrlDark =
+      'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png';
+
+  // OSRM Directions — free, no API key
+  static const String osrmDirectionsUrl =
+      'https://router.project-osrm.org/route/v1/driving';
+
+  // Nominatim Geocoding — free, no API key
+  static const String nominatimSearchUrl =
+      'https://nominatim.openstreetmap.org/search';
 
   // Default location: Manila, Philippines
   static const double defaultLat = 14.5995;

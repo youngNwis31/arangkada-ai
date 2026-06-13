@@ -14,33 +14,35 @@ class MapboxService {
     if (query.trim().isEmpty) return [];
 
     final params = <String, String>{
-      'access_token': AppConfig.mapboxAccessToken,
+      'q': query,
+      'format': 'json',
       'limit': '8',
-      'types': 'place,locality,neighborhood,address,poi',
-      'country': 'PH',
+      'countrycodes': 'ph',
+      'addressdetails': '1',
     };
 
     if (proximityLng != null && proximityLat != null) {
-      params['proximity'] = '$proximityLng,$proximityLat';
+      params['viewbox'] =
+          '${proximityLng - 0.5},${proximityLat - 0.5},${proximityLng + 0.5},${proximityLat + 0.5}';
+      params['bounded'] = '0';
     }
 
-    final url = Uri.parse(
-      '${AppConfig.mapboxGeocodingUrl}/${Uri.encodeComponent(query)}.json',
-    ).replace(queryParameters: params);
+    final url = Uri.parse(AppConfig.nominatimSearchUrl)
+        .replace(queryParameters: params);
 
-    final response = await http.get(url);
+    final response = await http.get(url, headers: {
+      'User-Agent': 'ArangkadaAI/0.03 (rider-nav-app)',
+    });
     if (response.statusCode != 200) return [];
 
-    final data = json.decode(response.body);
-    final features = data['features'] as List;
+    final data = json.decode(response.body) as List;
 
-    return features.map((f) {
-      final center = f['center'] as List;
+    return data.map((item) {
       return LocationModel(
-        longitude: (center[0] as num).toDouble(),
-        latitude: (center[1] as num).toDouble(),
-        name: f['text'] as String?,
-        address: f['place_name'] as String?,
+        longitude: double.parse(item['lon'] as String),
+        latitude: double.parse(item['lat'] as String),
+        name: item['display_name']?.toString().split(',').first,
+        address: item['display_name'] as String?,
       );
     }).toList();
   }
@@ -54,20 +56,21 @@ class MapboxService {
         '${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}';
 
     final url = Uri.parse(
-      '${AppConfig.mapboxDirectionsUrl}/$profile/$coords',
+      '${AppConfig.osrmDirectionsUrl}/$coords',
     ).replace(queryParameters: {
-      'access_token': AppConfig.mapboxAccessToken,
       'alternatives': 'true',
       'geometries': 'geojson',
       'overview': 'full',
       'steps': 'true',
-      'annotations': 'congestion,duration',
     });
 
-    final response = await http.get(url);
+    final response = await http.get(url, headers: {
+      'User-Agent': 'ArangkadaAI/0.03 (rider-nav-app)',
+    });
     if (response.statusCode != 200) return [];
 
     final data = json.decode(response.body);
+    if (data['code'] != 'Ok') return [];
     final routes = data['routes'] as List;
 
     final models = <RouteModel>[];
@@ -82,19 +85,13 @@ class MapboxService {
 
       final legs = route['legs'] as List;
       final steps = <RouteStep>[];
-      var congestion = <String>[];
 
       for (final leg in legs) {
-        if (leg['annotation']?['congestion'] != null) {
-          congestion = (leg['annotation']['congestion'] as List)
-              .map((c) => c.toString())
-              .toList();
-        }
         for (final step in (leg['steps'] as List)) {
           final m = step['maneuver'];
           final loc = m['location'] as List?;
           steps.add(RouteStep(
-            instruction: m['instruction'] as String? ?? '',
+            instruction: step['name'] as String? ?? '',
             distance: (step['distance'] as num).toDouble(),
             duration: (step['duration'] as num).toDouble(),
             modifier: m['modifier'] as String?,
@@ -112,7 +109,7 @@ class MapboxService {
         coordinates: coords,
         distance: (route['distance'] as num).toDouble(),
         duration: (route['duration'] as num).toDouble(),
-        congestionLevels: congestion,
+        congestionLevels: [],
         steps: steps,
         aiScore: 0,
         label: i == 0 ? 'Primary' : 'Alternative $i',
