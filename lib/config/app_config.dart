@@ -2,7 +2,7 @@ class AppConfig {
   AppConfig._();
 
   static const String appName = 'Arangkada AI';
-  static const String appVersion = 'v0.01';
+  static const String appVersion = 'v0.02';
   static const String developer = 'James Earl Medrano';
   static const String appTagline = 'Your 24/7 Rider Road Assistant';
 

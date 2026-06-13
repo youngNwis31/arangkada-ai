@@ -59,11 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _drawRoutes(NavigationProvider nav) async {
+    final c = MalateColors.of(context);
     await _polylineManager?.deleteAll();
     await _pointManager?.deleteAll();
     if (nav.routes.isEmpty) return;
-
-    final c = MalateColors.of(context);
     for (int i = nav.routes.length - 1; i >= 0; i--) {
       final route = nav.routes[i];
       final isSelected = i == nav.selectedRouteIndex;
