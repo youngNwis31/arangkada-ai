@@ -96,6 +96,7 @@ class RideToggle extends StatelessWidget {
             ),
           ),
           SizedBox(
+            width: 72,
             height: 46,
             child: ElevatedButton(
               onPressed: () => _showEndRideDialog(context, logger),
@@ -104,6 +105,7 @@ class RideToggle extends StatelessWidget {
                 foregroundColor: c.textPrimary,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
+                padding: EdgeInsets.zero,
                 elevation: 0,
               ),
               child: Text('END',
