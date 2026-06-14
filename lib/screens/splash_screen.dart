@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/theme/malate_colors.dart';
 import '../config/theme/malate_typography.dart';
 import '../config/app_config.dart';
-import 'home_screen.dart';
+import 'main_shell.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -41,7 +41,7 @@ class _SplashScreenState extends State<SplashScreen>
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const HomeScreen(),
+            pageBuilder: (_, __, ___) => const MainShell(),
             transitionDuration: const Duration(milliseconds: 600),
             transitionsBuilder: (_, animation, __, child) {
               return FadeTransition(opacity: animation, child: child);

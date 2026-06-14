@@ -27,10 +27,7 @@ class SettingsScreen extends StatelessWidget {
       backgroundColor: c.midnight,
       appBar: AppBar(
         backgroundColor: c.midnight,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: c.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
         title: Text('SETTINGS',
             style: MalateTypography.neonAccent(MalateColors.neonMint)),
       ),

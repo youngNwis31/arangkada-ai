@@ -13,9 +13,6 @@ import '../widgets/route_info_card.dart';
 import '../widgets/ride_toggle.dart';
 import 'search_screen.dart';
 import 'hazard_report_screen.dart';
-import 'ai_assistant_screen.dart';
-import 'earnings_screen.dart';
-import 'settings_screen.dart';
 import 'navigation_screen.dart';
 
 Widget _darkTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
@@ -176,19 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Column(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(child: _buildSearchBar(nav)),
-                          const SizedBox(width: 10),
-                          _buildIconButton(Icons.settings, () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const SettingsScreen()),
-                            );
-                          }),
-                        ],
-                      ),
+                      _buildSearchBar(nav),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -319,18 +304,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 right: 16,
                 child: Column(
                   children: [
-                    _buildFab(
-                        Icons.account_balance_wallet, MalateColors.electricAmber,
-                        () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => const EarningsScreen()));
-                    }),
-                    const SizedBox(height: 10),
-                    _buildFab(Icons.smart_toy, MalateColors.cyberCyan, () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => const AiAssistantScreen()));
-                    }),
-                    const SizedBox(height: 10),
                     _buildFab(Icons.warning_amber_rounded, MalateColors.electricAmber, () {
                       Navigator.push(context, MaterialPageRoute(
                         builder: (_) => HazardReportScreen(currentLocation: nav.currentLocation),
@@ -399,23 +372,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildIconButton(IconData icon, VoidCallback onTap) {
-    final c = MalateColors.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: c.asphalt,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: c.sidewalk),
-        ),
-        child: Icon(icon, color: c.textSecondary, size: 22),
       ),
     );
   }
