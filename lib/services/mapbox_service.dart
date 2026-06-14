@@ -16,9 +16,10 @@ class MapboxService {
     final params = <String, String>{
       'q': query,
       'format': 'json',
-      'limit': '8',
+      'limit': '10',
       'countrycodes': 'ph',
       'addressdetails': '1',
+      'dedupe': '1',
     };
 
     if (proximityLng != null && proximityLat != null) {

@@ -62,24 +62,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _fitBounds(NavigationProvider nav) {
-    if (nav.currentLocation == null || nav.destination == null) return;
-    final o = nav.currentLocation!;
-    final d = nav.destination!;
+    if (nav.routes.isEmpty) return;
+    final route = nav.selectedRoute;
+    if (route == null || route.coordinates.isEmpty) return;
 
-    final bounds = LatLngBounds(
-      LatLng(
-        o.latitude < d.latitude ? o.latitude : d.latitude,
-        o.longitude < d.longitude ? o.longitude : d.longitude,
-      ),
-      LatLng(
-        o.latitude > d.latitude ? o.latitude : d.latitude,
-        o.longitude > d.longitude ? o.longitude : d.longitude,
-      ),
-    );
+    double minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+    for (final c in route.coordinates) {
+      if (c[1] < minLat) minLat = c[1];
+      if (c[1] > maxLat) maxLat = c[1];
+      if (c[0] < minLng) minLng = c[0];
+      if (c[0] > maxLng) maxLng = c[0];
+    }
 
     _mapController.fitCamera(
       CameraFit.bounds(
-        bounds: bounds,
+        bounds: LatLngBounds(LatLng(minLat, minLng), LatLng(maxLat, maxLng)),
         padding: const EdgeInsets.fromLTRB(50, 120, 50, 320),
       ),
     );

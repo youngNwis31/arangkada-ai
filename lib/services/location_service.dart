@@ -17,6 +17,10 @@ class LocationService {
     return true;
   }
 
+  static bool _isInPhilippines(double lat, double lng) {
+    return lat >= 4.5 && lat <= 21.5 && lng >= 116.0 && lng <= 127.0;
+  }
+
   static Future<LocationModel> getCurrentLocation() async {
     try {
       final hasPermission = await requestPermission();
@@ -28,6 +32,10 @@ class LocationService {
           distanceFilter: 10,
         ),
       );
+
+      if (!_isInPhilippines(position.latitude, position.longitude)) {
+        return _defaultLocation();
+      }
 
       return LocationModel(
         latitude: position.latitude,

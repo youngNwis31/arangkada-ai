@@ -18,6 +18,7 @@ class NavigationScreen extends StatefulWidget {
 
 class _NavigationScreenState extends State<NavigationScreen> {
   final MapController _mapController = MapController();
+  bool _initialZoomDone = false;
 
   @override
   void initState() {
@@ -25,6 +26,25 @@ class _NavigationScreenState extends State<NavigationScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NavigationProvider>().startNavigation();
     });
+  }
+
+  LatLng _riderPosition(NavigationProvider nav) {
+    final pos = nav.navEngine.lastPosition;
+    if (pos != null && _isInPH(pos.latitude, pos.longitude)) {
+      return LatLng(pos.latitude, pos.longitude);
+    }
+    final route = nav.navEngine.route ?? nav.selectedRoute;
+    if (route != null && route.coordinates.isNotEmpty) {
+      final first = route.coordinates.first;
+      return LatLng(first[1], first[0]);
+    }
+    final o = nav.origin;
+    if (o != null) return LatLng(o.latitude, o.longitude);
+    return LatLng(AppConfig.defaultLat, AppConfig.defaultLng);
+  }
+
+  bool _isInPH(double lat, double lng) {
+    return lat >= 4.5 && lat <= 21.5 && lng >= 116.0 && lng <= 127.0;
   }
 
   List<Polyline> _buildRoutePolyline(NavigationProvider nav) {
@@ -44,14 +64,30 @@ class _NavigationScreenState extends State<NavigationScreen> {
     ];
   }
 
-  void _followRider(NavigationProvider nav) {
-    final pos = nav.navEngine.lastPosition;
-    if (pos == null) return;
-    _mapController.moveAndRotate(
-      LatLng(pos.latitude, pos.longitude),
-      17.0,
-      pos.heading.isNaN ? 0 : pos.heading,
+  void _fitRoute(NavigationProvider nav) {
+    final route = nav.navEngine.route ?? nav.selectedRoute;
+    if (route == null || route.coordinates.isEmpty) return;
+
+    double minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+    for (final c in route.coordinates) {
+      if (c[1] < minLat) minLat = c[1];
+      if (c[1] > maxLat) maxLat = c[1];
+      if (c[0] < minLng) minLng = c[0];
+      if (c[0] > maxLng) maxLng = c[0];
+    }
+
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds(LatLng(minLat, minLng), LatLng(maxLat, maxLng)),
+        padding: const EdgeInsets.fromLTRB(50, 100, 50, 280),
+      ),
     );
+  }
+
+  void _followRider(NavigationProvider nav) {
+    final pos = _riderPosition(nav);
+    final heading = nav.navEngine.lastPosition?.heading ?? 0;
+    _mapController.moveAndRotate(pos, 17.0, heading.isNaN ? 0 : heading);
   }
 
   void _onExit() {
@@ -69,10 +105,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
       body: Consumer<NavigationProvider>(
         builder: (context, nav, _) {
           final engine = nav.navEngine;
+          final rider = _riderPosition(nav);
 
-          if (engine.isNavigating && engine.lastPosition != null) {
+          if (!_initialZoomDone && engine.isNavigating) {
+            _initialZoomDone = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              _followRider(nav);
+              _fitRoute(nav);
             });
           }
 
@@ -81,11 +119,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
               FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
-                  initialCenter: LatLng(
-                    nav.currentLocation?.latitude ?? AppConfig.defaultLat,
-                    nav.currentLocation?.longitude ?? AppConfig.defaultLng,
-                  ),
-                  initialZoom: 17.0,
+                  initialCenter: rider,
+                  initialZoom: 15.0,
                 ),
                 children: [
                   TileLayer(
@@ -95,28 +130,33 @@ class _NavigationScreenState extends State<NavigationScreen> {
                     userAgentPackageName: 'com.arangkada.arangkadaAi',
                   ),
                   PolylineLayer(polylines: _buildRoutePolyline(nav)),
-                  if (engine.lastPosition != null)
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: LatLng(
-                            engine.lastPosition!.latitude,
-                            engine.lastPosition!.longitude,
-                          ),
-                          width: 28,
-                          height: 28,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: MalateColors.neonMint,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
-                              boxShadow: MalateColors.neonGlow(
-                                  MalateColors.neonMint, intensity: 0.4),
-                            ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: rider,
+                        width: 28,
+                        height: 28,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: MalateColors.neonMint,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: MalateColors.neonGlow(
+                                MalateColors.neonMint, intensity: 0.4),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      if (nav.destination != null)
+                        Marker(
+                          point: LatLng(nav.destination!.latitude,
+                              nav.destination!.longitude),
+                          width: 32,
+                          height: 32,
+                          child: const Icon(Icons.location_on,
+                              color: MalateColors.hazardRed, size: 32),
+                        ),
+                    ],
+                  ),
                 ],
               ),
 
@@ -156,6 +196,18 @@ class _NavigationScreenState extends State<NavigationScreen> {
                           ? MalateColors.cyberCyan
                           : c.textMuted,
                       engine.toggleVoice,
+                    ),
+                    const SizedBox(height: 10),
+                    _controlButton(
+                      Icons.my_location,
+                      MalateColors.neonMint,
+                      () => _followRider(nav),
+                    ),
+                    const SizedBox(height: 10),
+                    _controlButton(
+                      Icons.zoom_out_map,
+                      MalateColors.cyberCyan,
+                      () => _fitRoute(nav),
                     ),
                     const SizedBox(height: 10),
                     _controlButton(
