@@ -375,6 +375,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _locationTile(LocationModel place) {
     final c = MalateColors.of(context);
+    final icon = _placeIcon(place.placeType);
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       leading: Container(
@@ -384,8 +385,7 @@ class _SearchScreenState extends State<SearchScreen> {
           color: MalateColors.neonMint.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Icon(Icons.location_on,
-            color: MalateColors.neonMint, size: 20),
+        child: Icon(icon, color: MalateColors.neonMint, size: 20),
       ),
       title: Text(
         place.name ?? 'Unknown',
@@ -402,5 +402,25 @@ class _SearchScreenState extends State<SearchScreen> {
           : null,
       onTap: () => _selectLocation(place),
     );
+  }
+
+  IconData _placeIcon(String? type) {
+    return switch (type) {
+      'food' => Icons.restaurant,
+      'health' => Icons.local_hospital,
+      'education' => Icons.school,
+      'finance' => Icons.account_balance,
+      'worship' => Icons.church,
+      'fuel' => Icons.local_gas_station,
+      'emergency' => Icons.local_police,
+      'shop' => Icons.storefront,
+      'landmark' => Icons.photo_camera,
+      'building' => Icons.business,
+      'road' => Icons.add_road,
+      'office' => Icons.work,
+      'transport' => Icons.directions_bus,
+      'amenity' => Icons.place,
+      _ => Icons.location_on,
+    };
   }
 }

@@ -3,12 +3,14 @@ class LocationModel {
   final double longitude;
   final String? address;
   final String? name;
+  final String? placeType;
 
   const LocationModel({
     required this.latitude,
     required this.longitude,
     this.address,
     this.name,
+    this.placeType,
   });
 
   Map<String, dynamic> toJson() => {

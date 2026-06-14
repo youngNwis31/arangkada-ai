@@ -39,13 +39,103 @@ class MapboxService {
     final data = json.decode(response.body) as List;
 
     return data.map((item) {
+      final addr = item['address'] as Map<String, dynamic>? ?? {};
+      final type = item['type'] as String? ?? '';
+      final category = item['class'] as String? ?? '';
+
+      final placeName = _extractName(item, addr, type);
+      final addressLine = _buildAddress(addr, placeName);
+
       return LocationModel(
         longitude: double.parse(item['lon'] as String),
         latitude: double.parse(item['lat'] as String),
-        name: item['display_name']?.toString().split(',').first,
-        address: item['display_name'] as String?,
+        name: placeName,
+        address: addressLine,
+        placeType: _classifyType(category, type),
       );
     }).toList();
+  }
+
+  static String _extractName(
+      Map<String, dynamic> item, Map<String, dynamic> addr, String type) {
+    for (final key in [
+      type,
+      'amenity',
+      'building',
+      'shop',
+      'tourism',
+      'leisure',
+      'office',
+      'craft',
+      'aeroway',
+      'railway',
+      'highway',
+    ]) {
+      if (addr.containsKey(key) && addr[key] != null) {
+        return addr[key].toString();
+      }
+    }
+    final display = item['display_name']?.toString() ?? '';
+    return display.split(',').first.trim();
+  }
+
+  static String _buildAddress(Map<String, dynamic> addr, String placeName) {
+    final parts = <String>[];
+
+    final houseNumber = addr['house_number']?.toString();
+    final road = addr['road']?.toString();
+    if (road != null) {
+      parts.add(houseNumber != null ? '$houseNumber $road' : road);
+    }
+
+    for (final key in [
+      'neighbourhood',
+      'suburb',
+      'village',
+      'town',
+      'city_district',
+      'city',
+      'municipality',
+    ]) {
+      final v = addr[key]?.toString();
+      if (v != null && v != placeName && !parts.contains(v)) {
+        parts.add(v);
+        if (parts.length >= 3) break;
+      }
+    }
+
+    final province = addr['state']?.toString() ?? addr['province']?.toString();
+    if (province != null && !parts.contains(province)) {
+      parts.add(province);
+    }
+
+    return parts.isNotEmpty ? parts.join(', ') : 'Philippines';
+  }
+
+  static String _classifyType(String category, String type) {
+    if (category == 'amenity') {
+      if (const {'restaurant', 'fast_food', 'cafe', 'food_court'}
+          .contains(type)) return 'food';
+      if (const {'hospital', 'clinic', 'pharmacy', 'doctors'}
+          .contains(type)) return 'health';
+      if (const {'school', 'university', 'college', 'library'}
+          .contains(type)) return 'education';
+      if (const {'bank', 'atm'}.contains(type)) return 'finance';
+      if (const {'place_of_worship', 'church'}.contains(type)) return 'worship';
+      if (const {'fuel', 'charging_station'}.contains(type)) return 'fuel';
+      if (const {'police', 'fire_station'}.contains(type)) return 'emergency';
+      return 'amenity';
+    }
+    if (category == 'shop') return 'shop';
+    if (category == 'tourism') return 'landmark';
+    if (category == 'building') return 'building';
+    if (category == 'highway') return 'road';
+    if (category == 'place') return 'place';
+    if (category == 'office') return 'office';
+    if (const {'aeroway', 'railway', 'public_transport'}.contains(category)) {
+      return 'transport';
+    }
+    return 'place';
   }
 
   static Future<List<RouteModel>> getRoutes({
