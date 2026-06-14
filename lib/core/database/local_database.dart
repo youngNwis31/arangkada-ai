@@ -174,6 +174,11 @@ class LocalDatabase {
     await db.delete('ride_logs', where: 'id = ?', whereArgs: [id]);
   }
 
+  static Future<List<Map<String, dynamic>>> getAllRideLogs({int? limit}) async {
+    final db = await instance;
+    return db.query('ride_logs', orderBy: 'start_time DESC', limit: limit);
+  }
+
   // ── Rider Settings ──
   static Future<void> setRiderSetting(String key, String value) async {
     final db = await instance;

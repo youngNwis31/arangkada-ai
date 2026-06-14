@@ -9,6 +9,9 @@ import '../services/ride_logger.dart';
 import '../services/theme_provider.dart';
 import '../widgets/malate_card.dart';
 import 'earnings_screen.dart';
+import 'fuel_calculator_screen.dart';
+import 'hotspot_screen.dart';
+import 'safety_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -157,6 +160,49 @@ class SettingsScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const EarningsScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          _settingsTile(
+            context,
+            icon: Icons.local_gas_station,
+            color: MalateColors.electricAmber,
+            title: 'Fuel Calculator',
+            subtitle: 'Calculate fuel cost per trip',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const FuelCalculatorScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          _settingsTile(
+            context,
+            icon: Icons.map,
+            color: MalateColors.cyberCyan,
+            title: 'Booking Hotspots',
+            subtitle: 'See where you get the most bookings',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HotspotScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          _settingsTile(
+            context,
+            icon: Icons.shield,
+            color: MalateColors.hazardRed,
+            title: 'Rider Safety',
+            subtitle: 'SOS, emergency contacts, rest reminders',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SafetyScreen()),
               );
             },
           ),

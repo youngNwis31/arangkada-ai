@@ -12,6 +12,7 @@ class RideLogger extends ChangeNotifier {
   RidePlatform _selectedPlatform = RidePlatform.grab;
   List<RideLog> _todayLogs = [];
   List<RideLog> _weekLogs = [];
+  List<RideLog> _allLogs = [];
   double _fuelPricePerLiter = 65.0;
   double _vehicleKmPerLiter = 40.0;
   StreamSubscription<Position>? _gpsSub;
@@ -23,6 +24,7 @@ class RideLogger extends ChangeNotifier {
   RidePlatform get selectedPlatform => _selectedPlatform;
   List<RideLog> get todayLogs => _todayLogs;
   List<RideLog> get weekLogs => _weekLogs;
+  List<RideLog> get allLogs => _allLogs;
   double get fuelPricePerLiter => _fuelPricePerLiter;
   double get vehicleKmPerLiter => _vehicleKmPerLiter;
 
@@ -33,6 +35,9 @@ class RideLogger extends ChangeNotifier {
   double get todayDistance =>
       _todayLogs.fold(0, (sum, r) => sum + r.distanceKm);
   int get todayRideCount => _todayLogs.length;
+
+  Duration get todayRideDuration =>
+      _todayLogs.fold(Duration.zero, (sum, r) => sum + r.duration);
 
   double get weekEarnings =>
       _weekLogs.fold(0, (sum, r) => sum + r.estimatedEarning);
@@ -63,6 +68,9 @@ class RideLogger extends ChangeNotifier {
     final weekRows = await LocalDatabase.getRideLogs(
         since: weekStart.toIso8601String());
     _weekLogs = weekRows.map((r) => RideLog.fromDb(r)).toList();
+
+    final allRows = await LocalDatabase.getAllRideLogs(limit: 500);
+    _allLogs = allRows.map((r) => RideLog.fromDb(r)).toList();
 
     notifyListeners();
   }
