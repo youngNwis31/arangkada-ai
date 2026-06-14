@@ -33,8 +33,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
   List<LocationModel> _results = [];
   bool _searching = false;
+  bool _hasActiveQuery = false;
   Timer? _debounce;
   bool _editingFrom = false;
+
+  String get _activeQuery =>
+      _editingFrom ? _fromController.text : _toController.text;
 
   @override
   void initState() {
@@ -63,13 +67,19 @@ class _SearchScreenState extends State<SearchScreen> {
   void _onChanged(String q) {
     _debounce?.cancel();
     if (q.trim().length < 2) {
-      setState(() { _results = []; _searching = false; });
+      setState(() {
+        _results = [];
+        _searching = false;
+        _hasActiveQuery = false;
+      });
       return;
     }
+    setState(() => _hasActiveQuery = true);
     _debounce = Timer(const Duration(milliseconds: 400), () => _search(q));
   }
 
   Future<void> _search(String q) async {
+    if (q.trim().length < 2) return;
     setState(() => _searching = true);
     try {
       final r = await MapboxService.searchPlaces(
@@ -77,7 +87,12 @@ class _SearchScreenState extends State<SearchScreen> {
         proximityLng: widget.currentLocation?.longitude,
         proximityLat: widget.currentLocation?.latitude,
       );
-      if (mounted) setState(() { _results = r; _searching = false; });
+      if (mounted) {
+        setState(() {
+          _results = r;
+          _searching = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _searching = false);
     }
@@ -88,7 +103,11 @@ class _SearchScreenState extends State<SearchScreen> {
       _selectedOrigin = loc;
       _fromController.text = loc.name ?? loc.address ?? 'Selected';
       _fromFocus.unfocus();
-      setState(() { _results = []; _editingFrom = false; });
+      setState(() {
+        _results = [];
+        _hasActiveQuery = false;
+        _editingFrom = false;
+      });
       if (_selectedDestination == null) {
         _toFocus.requestFocus();
       } else {
@@ -98,7 +117,10 @@ class _SearchScreenState extends State<SearchScreen> {
       _selectedDestination = loc;
       _toController.text = loc.name ?? loc.address ?? 'Selected';
       _toFocus.unfocus();
-      setState(() => _results = []);
+      setState(() {
+        _results = [];
+        _hasActiveQuery = false;
+      });
       _navigateBack();
     }
   }
@@ -117,6 +139,24 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final c = MalateColors.of(context);
+
+    Widget body;
+    if (_searching) {
+      body = const Center(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: CircularProgressIndicator(
+              color: MalateColors.neonMint, strokeWidth: 2),
+        ),
+      );
+    } else if (_results.isNotEmpty) {
+      body = _searchResultsList();
+    } else if (_hasActiveQuery && _activeQuery.trim().length >= 2) {
+      body = _noResults();
+    } else {
+      body = _suggestionsList();
+    }
+
     return Scaffold(
       backgroundColor: c.midnight,
       appBar: AppBar(
@@ -131,19 +171,7 @@ class _SearchScreenState extends State<SearchScreen> {
       body: Column(
         children: [
           _routeFields(),
-          if (_searching)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(
-                  color: MalateColors.neonMint, strokeWidth: 2),
-            ),
-          Expanded(
-            child: _results.isNotEmpty
-                ? _searchResultsList()
-                : (_toController.text.isNotEmpty && _results.isEmpty && !_searching)
-                    ? _noResults()
-                    : _suggestionsList(),
-          ),
+          Expanded(child: body),
         ],
       ),
     );
@@ -178,7 +206,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   width: 2, height: 32,
                   color: c.textMuted.withValues(alpha: 0.3),
                 ),
-                Icon(Icons.location_on, color: MalateColors.hazardRed, size: 16),
+                const Icon(Icons.location_on, color: MalateColors.hazardRed, size: 16),
               ],
             ),
           ),
@@ -186,77 +214,51 @@ class _SearchScreenState extends State<SearchScreen> {
           Expanded(
             child: Column(
               children: [
-                TextField(
+                _buildField(
                   controller: _fromController,
                   focusNode: _fromFocus,
-                  onTap: () => setState(() => _editingFrom = true),
+                  hint: 'From where?',
+                  onTap: () {
+                    setState(() => _editingFrom = true);
+                    _fromController.selection = TextSelection(
+                      baseOffset: 0,
+                      extentOffset: _fromController.text.length,
+                    );
+                  },
                   onChanged: (q) {
                     _editingFrom = true;
                     _onChanged(q);
                   },
-                  style: MalateTypography.bodyMedium
-                      .copyWith(color: c.textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'From where?',
-                    hintStyle: MalateTypography.bodyMedium
-                        .copyWith(color: c.textMuted),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    filled: true,
-                    fillColor: c.gutter,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    suffixIcon: _fromController.text.isNotEmpty &&
-                            _fromController.text != 'Your location'
-                        ? IconButton(
-                            icon: Icon(Icons.clear, size: 16, color: c.textMuted),
-                            onPressed: () {
-                              _fromController.text = 'Your location';
-                              _selectedOrigin = widget.currentLocation;
-                              setState(() => _results = []);
-                            },
-                          )
-                        : null,
-                  ),
+                  onClear: () {
+                    _fromController.text = 'Your location';
+                    _selectedOrigin = widget.currentLocation;
+                    setState(() {
+                      _results = [];
+                      _hasActiveQuery = false;
+                    });
+                  },
+                  showClear: _fromController.text.isNotEmpty &&
+                      _fromController.text != 'Your location',
                 ),
                 const SizedBox(height: 8),
-                TextField(
+                _buildField(
                   controller: _toController,
                   focusNode: _toFocus,
+                  hint: 'Where to, rider?',
                   onTap: () => setState(() => _editingFrom = false),
                   onChanged: (q) {
                     _editingFrom = false;
                     _onChanged(q);
                   },
-                  style: MalateTypography.bodyMedium
-                      .copyWith(color: c.textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'Where to, rider?',
-                    hintStyle: MalateTypography.bodyMedium
-                        .copyWith(color: c.textMuted),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    filled: true,
-                    fillColor: c.gutter,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    suffixIcon: _toController.text.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(Icons.clear, size: 16, color: c.textMuted),
-                            onPressed: () {
-                              _toController.clear();
-                              _selectedDestination = null;
-                              setState(() => _results = []);
-                            },
-                          )
-                        : null,
-                  ),
+                  onClear: () {
+                    _toController.clear();
+                    _selectedDestination = null;
+                    setState(() {
+                      _results = [];
+                      _hasActiveQuery = false;
+                    });
+                  },
+                  showClear: _toController.text.isNotEmpty,
                 ),
               ],
             ),
@@ -266,14 +268,68 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  Widget _buildField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String hint,
+    required VoidCallback onTap,
+    required ValueChanged<String> onChanged,
+    required VoidCallback onClear,
+    required bool showClear,
+  }) {
+    final c = MalateColors.of(context);
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      onTap: onTap,
+      onChanged: onChanged,
+      autocorrect: false,
+      enableSuggestions: false,
+      style: MalateTypography.bodyMedium.copyWith(color: c.textPrimary),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: MalateTypography.bodyMedium.copyWith(color: c.textMuted),
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        filled: true,
+        fillColor: c.gutter,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        suffixIcon: showClear
+            ? IconButton(
+                icon: Icon(Icons.clear, size: 16, color: c.textMuted),
+                onPressed: onClear,
+              )
+            : null,
+      ),
+    );
+  }
+
   Widget _searchResultsList() {
     final c = MalateColors.of(context);
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: _results.length,
-      separatorBuilder: (_, __) =>
-          Divider(color: c.sidewalk, indent: 72),
-      itemBuilder: (_, i) => _locationTile(_results[i]),
+    final label = _editingFrom ? 'SET AS ORIGIN' : 'SET AS DESTINATION';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+          child: Text(label,
+              style: MalateTypography.neonAccent(c.textMuted)
+                  .copyWith(fontSize: 11)),
+        ),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            itemCount: _results.length,
+            separatorBuilder: (_, __) =>
+                Divider(color: c.sidewalk, indent: 64),
+            itemBuilder: (_, i) => _locationTile(_results[i]),
+          ),
+        ),
+      ],
     );
   }
 
@@ -289,7 +345,7 @@ class _SearchScreenState extends State<SearchScreen> {
               style: MalateTypography.headlineSmall
                   .copyWith(color: c.textMuted)),
           const SizedBox(height: 6),
-          Text('Try searching for a street, landmark, or city',
+          Text('Try a street name, landmark, or barangay',
               style: MalateTypography.bodySmall),
         ],
       ),
@@ -339,7 +395,7 @@ class _SearchScreenState extends State<SearchScreen> {
       subtitle: place.address != null
           ? Text(
               place.address!,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: MalateTypography.bodySmall,
             )
