@@ -18,6 +18,18 @@ import 'earnings_screen.dart';
 import 'settings_screen.dart';
 import 'navigation_screen.dart';
 
+Widget _darkTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
+  return ColorFiltered(
+    colorFilter: const ColorFilter.matrix(<double>[
+      -0.6, 0, 0, 0, 130,
+      0, -0.6, 0, 0, 130,
+      0, 0, -0.6, 0, 130,
+      0, 0, 0, 1, 0,
+    ]),
+    child: tileWidget,
+  );
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -114,6 +126,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? AppConfig.osmTileUrlDark
                         : AppConfig.osmTileUrl,
                     userAgentPackageName: 'com.arangkada.arangkadaAi',
+                    maxZoom: 19,
+                    retinaMode: true,
+                    tileBuilder: isDark ? _darkTileBuilder : null,
                   ),
                   if (nav.routes.isNotEmpty)
                     PolylineLayer(polylines: _buildPolylines(nav)),

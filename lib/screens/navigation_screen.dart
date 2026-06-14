@@ -9,6 +9,18 @@ import '../services/navigation_provider.dart';
 import '../services/offline_nav_engine.dart';
 import '../widgets/nav_instruction_card.dart';
 
+Widget _darkTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
+  return ColorFiltered(
+    colorFilter: const ColorFilter.matrix(<double>[
+      -0.6, 0, 0, 0, 130,
+      0, -0.6, 0, 0, 130,
+      0, 0, -0.6, 0, 130,
+      0, 0, 0, 1, 0,
+    ]),
+    child: tileWidget,
+  );
+}
+
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key});
 
@@ -128,6 +140,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         ? AppConfig.osmTileUrlDark
                         : AppConfig.osmTileUrl,
                     userAgentPackageName: 'com.arangkada.arangkadaAi',
+                    maxZoom: 19,
+                    retinaMode: true,
+                    tileBuilder: isDark ? _darkTileBuilder : null,
                   ),
                   PolylineLayer(polylines: _buildRoutePolyline(nav)),
                   MarkerLayer(

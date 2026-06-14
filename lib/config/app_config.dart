@@ -6,11 +6,13 @@ class AppConfig {
   static const String developer = 'James Earl Medrano';
   static const String appTagline = 'Your 24/7 Rider Road Assistant';
 
-  // OpenStreetMap — free, no API key required
+  // Map tiles — free, no API key required
+  // CartoDB Voyager: Google Maps-style with streets, buildings, labels
   static const String osmTileUrl =
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
+  // Same detailed tiles used for dark mode (color-filtered in code)
   static const String osmTileUrlDark =
-      'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
 
   // OSRM Directions — free, no API key
   static const String osrmDirectionsUrl =
