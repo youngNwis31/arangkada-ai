@@ -107,7 +107,32 @@ class OfflineNavEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _onPositionUpdate(Position pos) {
+  static bool _isInPhilippines(double lat, double lng) {
+    return lat >= 4.5 && lat <= 21.5 && lng >= 116.0 && lng <= 127.0;
+  }
+
+  Position _adjustedPosition(Position pos) {
+    if (_isInPhilippines(pos.latitude, pos.longitude)) return pos;
+    if (_route != null && _route!.coordinates.isNotEmpty) {
+      final start = _route!.coordinates.first;
+      return Position(
+        latitude: start[1],
+        longitude: start[0],
+        timestamp: pos.timestamp,
+        accuracy: pos.accuracy,
+        altitude: pos.altitude,
+        altitudeAccuracy: pos.altitudeAccuracy,
+        heading: pos.heading,
+        headingAccuracy: pos.headingAccuracy,
+        speed: 0,
+        speedAccuracy: pos.speedAccuracy,
+      );
+    }
+    return pos;
+  }
+
+  void _onPositionUpdate(Position raw) {
+    final pos = _adjustedPosition(raw);
     _lastPosition = pos;
     _speedMs = pos.speed.isNaN ? 0 : pos.speed;
 
