@@ -4,6 +4,7 @@ import '../config/theme/malate_colors.dart';
 import '../config/theme/malate_typography.dart';
 import '../models/location_model.dart';
 import '../services/mapbox_service.dart';
+import '../services/poi_service.dart';
 
 const _suggestions = <LocationModel>[
   LocationModel(latitude: 14.5547, longitude: 121.0244, name: 'Makati', address: 'Business district, Metro Manila'),
@@ -12,6 +13,18 @@ const _suggestions = <LocationModel>[
   LocationModel(latitude: 14.5764, longitude: 121.0851, name: 'Ortigas Pasig', address: 'Ortigas Center, Pasig'),
   LocationModel(latitude: 14.5378, longitude: 121.0014, name: 'Pasay MOA', address: 'Mall of Asia area'),
   LocationModel(latitude: 16.4023, longitude: 120.5960, name: 'Baguio', address: 'Summer Capital of the Philippines'),
+];
+
+const _nearbyCategories = <(PoiCategory, IconData, Color)>[
+  (PoiCategory.cafe, Icons.coffee, Color(0xFF8B5CF6)),
+  (PoiCategory.restaurant, Icons.restaurant, Color(0xFFFF6B35)),
+  (PoiCategory.fastFood, Icons.fastfood, Color(0xFFFFB800)),
+  (PoiCategory.gasStation, Icons.local_gas_station, MalateColors.electricAmber),
+  (PoiCategory.bank, Icons.account_balance, Color(0xFF4A90D9)),
+  (PoiCategory.pharmacy, Icons.local_pharmacy, MalateColors.hazardRed),
+  (PoiCategory.convenience, Icons.storefront, MalateColors.cyberCyan),
+  (PoiCategory.hospital, Icons.local_hospital, Color(0xFFE53E3E)),
+  (PoiCategory.parking, Icons.local_parking, Color(0xFF8B5CF6)),
 ];
 
 class SearchScreen extends StatefulWidget {
@@ -36,6 +49,7 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _hasActiveQuery = false;
   Timer? _debounce;
   bool _editingFrom = false;
+  String? _browsingCategory;
 
   String get _activeQuery =>
       _editingFrom ? _fromController.text : _toController.text;
@@ -98,6 +112,32 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  Future<void> _browseCategory(PoiCategory category) async {
+    setState(() {
+      _searching = true;
+      _browsingCategory = category.label;
+      _hasActiveQuery = true;
+    });
+    try {
+      final lat = widget.currentLocation?.latitude ?? 14.5995;
+      final lng = widget.currentLocation?.longitude ?? 120.9842;
+      final results = await PoiService.fetchByCategory(
+        lat: lat,
+        lng: lng,
+        category: category,
+        radius: 3000,
+      );
+      if (mounted) {
+        setState(() {
+          _results = results;
+          _searching = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
   void _selectLocation(LocationModel loc) {
     if (_editingFrom) {
       _selectedOrigin = loc;
@@ -151,6 +191,8 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     } else if (_results.isNotEmpty) {
       body = _searchResultsList();
+    } else if (_browsingCategory != null) {
+      body = _noResults();
     } else if (_hasActiveQuery && _activeQuery.trim().length >= 2) {
       body = _noResults();
     } else {
@@ -310,15 +352,40 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _searchResultsList() {
     final c = MalateColors.of(context);
-    final label = _editingFrom ? 'SET AS ORIGIN' : 'SET AS DESTINATION';
+    final label = _browsingCategory != null
+        ? 'NEARBY ${_browsingCategory!.toUpperCase()}'
+        : _editingFrom
+            ? 'SET AS ORIGIN'
+            : 'SET AS DESTINATION';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-          child: Text(label,
-              style: MalateTypography.neonAccent(c.textMuted)
-                  .copyWith(fontSize: 11)),
+          child: Row(
+            children: [
+              Text(label,
+                  style: MalateTypography.neonAccent(c.textMuted)
+                      .copyWith(fontSize: 11)),
+              const Spacer(),
+              if (_browsingCategory != null)
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _results = [];
+                      _hasActiveQuery = false;
+                      _browsingCategory = null;
+                    });
+                  },
+                  child: Text('BACK',
+                      style: MalateTypography.labelSmall
+                          .copyWith(color: MalateColors.cyberCyan, fontSize: 11)),
+                ),
+              Text(' ${_results.length} found',
+                  style: MalateTypography.labelSmall
+                      .copyWith(color: c.textDisabled, fontSize: 10)),
+            ],
+          ),
         ),
         Expanded(
           child: ListView.separated(
@@ -358,6 +425,16 @@ class _SearchScreenState extends State<SearchScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
       children: [
         Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            'EXPLORE NEARBY',
+            style: MalateTypography.neonAccent(c.textMuted)
+                .copyWith(fontSize: 11),
+          ),
+        ),
+        _nearbyGrid(),
+        const SizedBox(height: 20),
+        Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
             'POPULAR DESTINATIONS',
@@ -370,6 +447,50 @@ class _SearchScreenState extends State<SearchScreen> {
               child: _locationTile(loc),
             )),
       ],
+    );
+  }
+
+  Widget _nearbyGrid() {
+    final c = MalateColors.of(context);
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _nearbyCategories.map((cat) {
+        final (category, icon, color) = cat;
+        return GestureDetector(
+          onTap: () => _browseCategory(category),
+          child: Container(
+            width: (MediaQuery.of(context).size.width - 56) / 3,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: c.asphalt,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  category.label,
+                  style: MalateTypography.labelSmall.copyWith(
+                    color: c.textSecondary,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 

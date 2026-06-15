@@ -8,6 +8,7 @@ import '../models/location_model.dart';
 import '../config/theme/malate_typography.dart';
 import '../core/offline/connectivity_monitor.dart';
 import '../services/navigation_provider.dart';
+import '../services/poi_service.dart';
 import '../widgets/signal_indicator.dart';
 import '../widgets/route_info_card.dart';
 import '../widgets/ride_toggle.dart';
@@ -36,13 +37,64 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final MapController _mapController = MapController();
+  List<LocationModel> _pois = [];
+  PoiCategory? _activeCategory;
+  final bool _showPois = true;
+
+  static const _poiChips = [
+    PoiCategory.cafe,
+    PoiCategory.restaurant,
+    PoiCategory.gasStation,
+    PoiCategory.bank,
+    PoiCategory.convenience,
+    PoiCategory.pharmacy,
+    PoiCategory.parking,
+  ];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NavigationProvider>().initLocation();
+      _loadDefaultPois();
     });
+  }
+
+  Future<void> _loadDefaultPois() async {
+    final nav = context.read<NavigationProvider>();
+    final lat = nav.currentLocation?.latitude ?? AppConfig.defaultLat;
+    final lng = nav.currentLocation?.longitude ?? AppConfig.defaultLng;
+    final results = await PoiService.fetchAllNearby(lat: lat, lng: lng);
+    if (mounted) {
+      setState(() {
+        _pois = results;
+        _activeCategory = null;
+      });
+    }
+  }
+
+  Future<void> _loadCategoryPois(PoiCategory category) async {
+    if (_activeCategory == category) {
+      _loadDefaultPois();
+      return;
+    }
+    final nav = context.read<NavigationProvider>();
+    final lat = nav.currentLocation?.latitude ?? AppConfig.defaultLat;
+    final lng = nav.currentLocation?.longitude ?? AppConfig.defaultLng;
+    setState(() {
+      _activeCategory = category;
+    });
+    final results = await PoiService.fetchByCategory(
+      lat: lat,
+      lng: lng,
+      category: category,
+      radius: 2000,
+    );
+    if (mounted) {
+      setState(() {
+        _pois = results;
+      });
+    }
   }
 
   void _flyTo(double lat, double lng) {
@@ -129,6 +181,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   if (nav.routes.isNotEmpty)
                     PolylineLayer(polylines: _buildPolylines(nav)),
+                  if (_showPois && _pois.isNotEmpty)
+                    MarkerLayer(
+                      markers: _pois.map((poi) => Marker(
+                        point: LatLng(poi.latitude, poi.longitude),
+                        width: 120,
+                        height: 40,
+                        child: _PoiMarker(poi: poi, onTap: () => _onPoiTap(poi)),
+                      )).toList(),
+                    ),
                   if (nav.currentLocation != null)
                     MarkerLayer(
                       markers: [
@@ -188,6 +249,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
+                      if (!nav.hasRoute) ...[
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 36,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _poiChips.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 6),
+                            itemBuilder: (_, i) => _buildPoiChip(_poiChips[i]),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -392,5 +465,228 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Icon(icon, color: color, size: 24),
       ),
     );
+  }
+
+  Widget _buildPoiChip(PoiCategory category) {
+    final c = MalateColors.of(context);
+    final isActive = _activeCategory == category;
+    return GestureDetector(
+      onTap: () => _loadCategoryPois(category),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive ? MalateColors.neonMint : c.asphalt,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive
+                ? MalateColors.neonMint
+                : c.sidewalk,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(category.emoji, style: const TextStyle(fontSize: 13)),
+            const SizedBox(width: 4),
+            Text(
+              category.label,
+              style: MalateTypography.labelSmall.copyWith(
+                color: isActive ? c.midnight : c.textSecondary,
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _onPoiTap(LocationModel poi) {
+    final c = MalateColors.of(context);
+    final nav = context.read<NavigationProvider>();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: c.asphalt,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: c.sidewalk,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  width: 44, height: 44,
+                  decoration: BoxDecoration(
+                    color: MalateColors.neonMint.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _poiIcon(poi.placeType),
+                    color: MalateColors.neonMint,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        poi.name ?? 'Unknown',
+                        style: MalateTypography.headlineSmall.copyWith(
+                          color: c.textPrimary, fontSize: 16,
+                        ),
+                      ),
+                      if (poi.address != null && poi.address!.isNotEmpty)
+                        Text(
+                          poi.address!,
+                          style: MalateTypography.bodySmall.copyWith(
+                            color: c.textMuted, fontSize: 12,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  nav.setDestination(poi);
+                },
+                icon: const Icon(Icons.directions, size: 20),
+                label: Text('NAVIGATE HERE',
+                    style: MalateTypography.labelLarge.copyWith(color: c.midnight)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MalateColors.neonMint,
+                  foregroundColor: c.midnight,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _poiIcon(String? type) {
+    return switch (type) {
+      'food' => Icons.restaurant,
+      'health' => Icons.local_hospital,
+      'education' => Icons.school,
+      'finance' => Icons.account_balance,
+      'worship' => Icons.church,
+      'fuel' => Icons.local_gas_station,
+      'emergency' => Icons.local_police,
+      'shop' => Icons.storefront,
+      'parking' => Icons.local_parking,
+      _ => Icons.place,
+    };
+  }
+}
+
+class _PoiMarker extends StatelessWidget {
+  final LocationModel poi;
+  final VoidCallback onTap;
+  const _PoiMarker({required this.poi, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = MalateColors.of(context);
+    final color = _markerColor(poi.placeType);
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+              color: c.asphalt.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: color.withValues(alpha: 0.5), width: 0.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(_iconForType(poi.placeType), size: 12, color: color),
+                const SizedBox(width: 3),
+                Flexible(
+                  child: Text(
+                    poi.name ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: c.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.arrow_drop_down, size: 10, color: color),
+        ],
+      ),
+    );
+  }
+
+  static Color _markerColor(String? type) {
+    return switch (type) {
+      'food' => const Color(0xFFFF6B35),
+      'health' => MalateColors.hazardRed,
+      'finance' => const Color(0xFF4A90D9),
+      'fuel' => MalateColors.electricAmber,
+      'shop' => MalateColors.cyberCyan,
+      'parking' => const Color(0xFF8B5CF6),
+      _ => MalateColors.neonMint,
+    };
+  }
+
+  static IconData _iconForType(String? type) {
+    return switch (type) {
+      'food' => Icons.restaurant,
+      'health' => Icons.local_hospital,
+      'finance' => Icons.account_balance,
+      'fuel' => Icons.local_gas_station,
+      'shop' => Icons.storefront,
+      'parking' => Icons.local_parking,
+      'worship' => Icons.church,
+      'education' => Icons.school,
+      _ => Icons.place,
+    };
   }
 }
