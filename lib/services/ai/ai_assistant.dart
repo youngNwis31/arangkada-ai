@@ -1,19 +1,37 @@
 import 'package:flutter/foundation.dart';
+import '../ride_logger.dart';
+import '../../core/offline/connectivity_monitor.dart';
+import 'knowledge_base.dart';
+import 'ai_context.dart';
+
+enum ResponseSource { knowledgeBase, ruleBased, localLlm, gemini }
 
 class AiAssistant extends ChangeNotifier {
   final List<ChatMessage> _messages = [];
   bool _isProcessing = false;
+  RideLogger? _rideLogger;
+  ConnectivityMonitor? _connectivity;
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   bool get isProcessing => _isProcessing;
+
+  void updateDependencies({
+    required RideLogger rideLogger,
+    required ConnectivityMonitor connectivity,
+  }) {
+    _rideLogger = rideLogger;
+    _connectivity = connectivity;
+  }
 
   AiAssistant() {
     _messages.add(ChatMessage(
       role: MessageRole.assistant,
       text: 'Musta, rider! Ako si Arangkada AI — your 24/7 road assistant. '
-          'Ask me about routes, traffic, hazards, or directions. '
+          'I know 100+ topics: traffic rules, platform tips, maintenance, '
+          'earnings tracking, emergency info, and more. '
           'Pwede ka rin mag-Taglish!',
       timestamp: DateTime.now(),
+      source: ResponseSource.knowledgeBase,
     ));
   }
 
@@ -28,75 +46,94 @@ class AiAssistant extends ChangeNotifier {
     _isProcessing = true;
     notifyListeners();
 
-    // Offline rule-based responses for v0.01.
-    // Future: Replace with local SLM (Qwen-1.5B / Gemma-2B via llama_flutter)
-    final response = _generateOfflineResponse(text.trim().toLowerCase());
+    final result = _generateResponse(text.trim());
 
-    await Future.delayed(const Duration(milliseconds: 400));
+    await Future.delayed(const Duration(milliseconds: 300));
 
     _messages.add(ChatMessage(
       role: MessageRole.assistant,
-      text: response,
+      text: result.response,
       timestamp: DateTime.now(),
+      source: result.source,
     ));
     _isProcessing = false;
     notifyListeners();
   }
 
-  String _generateOfflineResponse(String query) {
-    if (_matches(query, ['traffic', 'trapik', 'congestion', 'siksikan'])) {
-      return 'I can check traffic conditions along your route. '
-          'Set a destination first and I\'ll score each route by congestion level. '
-          'The AI Recommended route avoids the heaviest traffic.';
+  ({String response, ResponseSource source}) _generateResponse(String query) {
+    // 1. Knowledge base match
+    final kb = KnowledgeBase.match(query);
+    if (kb.found) {
+      var response = kb.response;
+      // Fill context variables if needed
+      if (response.contains('{') && _rideLogger != null && _connectivity != null) {
+        final ctx = AiContext(
+          rideLogger: _rideLogger!,
+          connectivity: _connectivity!,
+        );
+        response = ctx.fillTemplate(response, ctx.gather());
+      }
+      return (response: response, source: ResponseSource.knowledgeBase);
     }
 
-    if (_matches(query, ['lubak', 'pothole', 'butas', 'road damage'])) {
-      return 'To report a pothole, use the hazard button (warning icon) on the map. '
-          'One tap logs it with your GPS coordinates. '
-          'Reports sync to other riders when you\'re back online.';
-    }
+    // 2. (Future: Local LLM goes here)
 
-    if (_matches(query, ['baha', 'flood', 'tubig', 'binabaha'])) {
-      return 'Flooding reports are saved offline and shared with other riders. '
-          'I\'ll re-route you around reported flood zones when available. '
-          'Stay safe — avoid water higher than your exhaust pipe.';
-    }
-
-    if (_matches(query, ['shortcut', 'malapit', 'shortcut', 'daan'])) {
-      return 'I analyze Mapbox route alternatives and score them by distance, '
-          'duration, and traffic. The "Shortest Distance" option shows the '
-          'most direct path. Set your destination to see all options.';
-    }
-
-    if (_matches(query, ['offline', 'walang signal', 'no internet', 'dead zone'])) {
-      return 'Arangkada AI works offline! Pre-download maps for your area '
-          'via the Offline Maps screen. Hazard reports are saved locally '
-          'and auto-sync when signal returns. Voice commands work offline too.';
-    }
-
-    if (_matches(query, ['gas', 'gasolinahan', 'petron', 'shell', 'fuel'])) {
-      return 'Search for "gas station" or "Petron" in the search bar — '
-          'Mapbox will show nearby fuel stations. I\'ll include them '
-          'in your route if needed.';
-    }
-
-    if (_matches(query, ['help', 'tulong', 'paano', 'how'])) {
-      return 'Here\'s what I can help with:\n'
-          '• Set destinations and get AI-optimized routes\n'
-          '• Report hazards (lubak, baha, checkpoint)\n'
-          '• Download offline maps for dead zones\n'
-          '• Voice navigation directions\n'
-          '• Traffic-aware route scoring\n\n'
-          'Just ask in English or Taglish!';
-    }
-
-    return 'Got it, rider! In v0.01, I handle route questions, hazard reports, '
-        'and navigation help. For more complex queries, a local AI model '
-        'is coming in the next update. Anything else?';
+    // 3. Rule-based fallback
+    final fallback = _ruleFallback(query.toLowerCase());
+    return (response: fallback, source: ResponseSource.ruleBased);
   }
 
-  bool _matches(String query, List<String> keywords) {
-    return keywords.any((k) => query.contains(k));
+  String _ruleFallback(String query) {
+    if (query.length < 3) {
+      return 'Hmm, can you tell me more? Try asking about traffic rules, '
+          'earnings, maintenance, or say "help" for a list of topics!';
+    }
+
+    return 'I don\'t have a specific answer for that yet, rider. '
+        'But I\'m learning! Here\'s what I can help with:\n\n'
+        '🚦 Traffic rules & regulations\n'
+        '💰 Earnings & platform comparisons\n'
+        '🔧 Motorcycle maintenance\n'
+        '🗺️ Navigation & offline maps\n'
+        '🆘 Emergency info & numbers\n'
+        '📍 Manila landmarks\n'
+        '⛽ Fuel tips\n'
+        '📋 Legal & LTO requirements\n\n'
+        'Try asking: "EDSA motorcycle rules" or "magkano kita ko?"';
+  }
+
+  List<String> getSuggestions() {
+    if (_messages.length <= 1) {
+      return [
+        'Magkano kita ko?',
+        'EDSA motor ban?',
+        'Emergency numbers',
+        'Maintenance tips',
+      ];
+    }
+
+    final last = _messages.last;
+    if (last.source == ResponseSource.knowledgeBase) {
+      switch (last.category) {
+        case 'traffic_rules':
+          return ['Helmet law', 'Number coding', 'Speed limit'];
+        case 'platform_policies':
+          return ['Best platform?', 'Peak hours', 'Incentive tips'];
+        case 'maintenance':
+          return ['Oil change', 'Brake check', 'Tune up schedule'];
+        case 'earnings':
+          return ['Platform comparison', 'Daily target', 'Fuel cost'];
+        case 'emergency':
+          return ['Accident what to do', 'Nearest hospital', 'Stolen motor'];
+      }
+    }
+
+    return [
+      'Traffic rules',
+      'Earnings summary',
+      'Offline maps',
+      'Help',
+    ];
   }
 }
 
@@ -106,10 +143,14 @@ class ChatMessage {
   final MessageRole role;
   final String text;
   final DateTime timestamp;
+  final ResponseSource? source;
+  final String? category;
 
   const ChatMessage({
     required this.role,
     required this.text,
     required this.timestamp,
+    this.source,
+    this.category,
   });
 }

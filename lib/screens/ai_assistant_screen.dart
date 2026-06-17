@@ -21,7 +21,16 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     if (text.isEmpty) return;
     _controller.clear();
     context.read<AiAssistant>().sendMessage(text);
+    _scrollToBottom();
+  }
 
+  void _sendSuggestion(String text) {
+    _controller.clear();
+    context.read<AiAssistant>().sendMessage(text);
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -77,7 +86,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             color: c.asphalt,
             child: Text(
-              'Offline AI — Taglish & English supported',
+              'Smart Knowledge Base — 100+ rider topics',
               style: MalateTypography.labelSmall
                   .copyWith(color: c.textMuted),
             ),
@@ -97,10 +106,38 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               },
             ),
           ),
+          _suggestionChips(),
           _inputBar(),
         ],
       ),
     );
+  }
+
+  Widget _sourceIcon(ResponseSource? source) {
+    switch (source) {
+      case ResponseSource.knowledgeBase:
+        return const Tooltip(
+          message: 'Knowledge Base',
+          child: Icon(Icons.menu_book, size: 14, color: MalateColors.neonMint),
+        );
+      case ResponseSource.ruleBased:
+        return const Tooltip(
+          message: 'Rule-based',
+          child: Icon(Icons.settings, size: 14, color: MalateColors.cyberCyan),
+        );
+      case ResponseSource.localLlm:
+        return const Tooltip(
+          message: 'Local AI',
+          child: Icon(Icons.psychology, size: 14, color: MalateColors.electricAmber),
+        );
+      case ResponseSource.gemini:
+        return const Tooltip(
+          message: 'Gemini AI',
+          child: Icon(Icons.cloud, size: 14, color: MalateColors.cyberCyan),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _bubble(ChatMessage msg) {
@@ -115,31 +152,114 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       ),
       child: Align(
         alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isUser ? MalateColors.neonMint.withValues(alpha: 0.12) : c.gutter,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: isUser ? const Radius.circular(16) : Radius.zero,
-              bottomRight: isUser ? Radius.zero : const Radius.circular(16),
+        child: Column(
+          crossAxisAlignment:
+              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isUser
+                    ? MalateColors.neonMint.withValues(alpha: 0.12)
+                    : c.gutter,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(16),
+                  topRight: const Radius.circular(16),
+                  bottomLeft:
+                      isUser ? const Radius.circular(16) : Radius.zero,
+                  bottomRight:
+                      isUser ? Radius.zero : const Radius.circular(16),
+                ),
+                border: Border.all(
+                  color: isUser
+                      ? MalateColors.neonMint.withValues(alpha: 0.2)
+                      : c.sidewalk,
+                ),
+              ),
+              child: Text(
+                msg.text,
+                style: MalateTypography.bodyMedium.copyWith(
+                  color: c.textPrimary,
+                  height: 1.5,
+                ),
+              ),
             ),
-            border: Border.all(
-              color: isUser
-                  ? MalateColors.neonMint.withValues(alpha: 0.2)
-                  : c.sidewalk,
-            ),
-          ),
-          child: Text(
-            msg.text,
-            style: MalateTypography.bodyMedium.copyWith(
-              color: c.textPrimary,
-              height: 1.5,
-            ),
-          ),
+            if (!isUser && msg.source != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _sourceIcon(msg.source),
+                  const SizedBox(width: 4),
+                  Text(
+                    _sourceLabel(msg.source),
+                    style: MalateTypography.labelSmall.copyWith(
+                      color: c.textMuted,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
         ),
       ),
+    );
+  }
+
+  String _sourceLabel(ResponseSource? source) {
+    switch (source) {
+      case ResponseSource.knowledgeBase:
+        return 'Knowledge Base';
+      case ResponseSource.ruleBased:
+        return 'Rule-based';
+      case ResponseSource.localLlm:
+        return 'Local AI';
+      case ResponseSource.gemini:
+        return 'Gemini';
+      default:
+        return '';
+    }
+  }
+
+  Widget _suggestionChips() {
+    final c = MalateColors.of(context);
+    return Consumer<AiAssistant>(
+      builder: (_, ai, __) {
+        if (ai.isProcessing) return const SizedBox.shrink();
+        final suggestions = ai.getSuggestions();
+        if (suggestions.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: c.asphalt,
+            border: Border(top: BorderSide(color: c.sidewalk.withValues(alpha: 0.3))),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: suggestions.map((s) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ActionChip(
+                    label: Text(s,
+                        style: MalateTypography.labelSmall
+                            .copyWith(color: MalateColors.cyberCyan)),
+                    backgroundColor: MalateColors.cyberCyan.withValues(alpha: 0.1),
+                    side: BorderSide(
+                        color: MalateColors.cyberCyan.withValues(alpha: 0.3)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    onPressed: () => _sendSuggestion(s),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -70,8 +70,18 @@ class ArangkadaApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider.value(value: tileCache),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
-        ChangeNotifierProvider(create: (_) => AiAssistant()),
         ChangeNotifierProvider(create: (_) => RideLogger()..init()),
+        ChangeNotifierProxyProvider2<RideLogger, ConnectivityMonitor,
+            AiAssistant>(
+          create: (_) => AiAssistant(),
+          update: (_, rideLogger, connectivity, ai) {
+            ai!.updateDependencies(
+              rideLogger: rideLogger,
+              connectivity: connectivity,
+            );
+            return ai;
+          },
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, _) => MaterialApp(
