@@ -1,19 +1,24 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../ride_logger.dart';
 import '../../core/offline/connectivity_monitor.dart';
 import 'knowledge_base.dart';
 import 'ai_context.dart';
+import 'llm_service.dart';
 
 enum ResponseSource { knowledgeBase, ruleBased, localLlm, gemini }
 
 class AiAssistant extends ChangeNotifier {
   final List<ChatMessage> _messages = [];
   bool _isProcessing = false;
+  bool _isStreaming = false;
   RideLogger? _rideLogger;
   ConnectivityMonitor? _connectivity;
+  LlmService? _llmService;
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   bool get isProcessing => _isProcessing;
+  bool get isStreaming => _isStreaming;
 
   void updateDependencies({
     required RideLogger rideLogger,
@@ -21,6 +26,10 @@ class AiAssistant extends ChangeNotifier {
   }) {
     _rideLogger = rideLogger;
     _connectivity = connectivity;
+  }
+
+  void setLlmService(LlmService service) {
+    _llmService = service;
   }
 
   AiAssistant() {
@@ -46,26 +55,10 @@ class AiAssistant extends ChangeNotifier {
     _isProcessing = true;
     notifyListeners();
 
-    final result = _generateResponse(text.trim());
-
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    _messages.add(ChatMessage(
-      role: MessageRole.assistant,
-      text: result.response,
-      timestamp: DateTime.now(),
-      source: result.source,
-    ));
-    _isProcessing = false;
-    notifyListeners();
-  }
-
-  ({String response, ResponseSource source}) _generateResponse(String query) {
-    // 1. Knowledge base match
-    final kb = KnowledgeBase.match(query);
+    // 1. Knowledge base match (instant)
+    final kb = KnowledgeBase.match(text.trim());
     if (kb.found) {
       var response = kb.response;
-      // Fill context variables if needed
       if (response.contains('{') && _rideLogger != null && _connectivity != null) {
         final ctx = AiContext(
           rideLogger: _rideLogger!,
@@ -73,14 +66,83 @@ class AiAssistant extends ChangeNotifier {
         );
         response = ctx.fillTemplate(response, ctx.gather());
       }
-      return (response: response, source: ResponseSource.knowledgeBase);
+      await Future.delayed(const Duration(milliseconds: 300));
+      _messages.add(ChatMessage(
+        role: MessageRole.assistant,
+        text: response,
+        timestamp: DateTime.now(),
+        source: ResponseSource.knowledgeBase,
+      ));
+      _isProcessing = false;
+      notifyListeners();
+      return;
     }
 
-    // 2. (Future: Local LLM goes here)
+    // 2. Local LLM (if downloaded and ready)
+    if (_llmService != null && _llmService!.downloadManager.isModelDownloaded) {
+      _isStreaming = true;
+      _isProcessing = false;
+      final streamMsg = ChatMessage(
+        role: MessageRole.assistant,
+        text: '',
+        timestamp: DateTime.now(),
+        source: ResponseSource.localLlm,
+        isStreaming: true,
+      );
+      _messages.add(streamMsg);
+      notifyListeners();
+
+      final msgIndex = _messages.length - 1;
+      String fullText = '';
+
+      try {
+        await for (final token in _llmService!.generateResponse(text.trim())
+            .timeout(const Duration(seconds: 30))) {
+          fullText = token;
+          _messages[msgIndex] = ChatMessage(
+            role: MessageRole.assistant,
+            text: fullText,
+            timestamp: streamMsg.timestamp,
+            source: ResponseSource.localLlm,
+            isStreaming: true,
+          );
+          notifyListeners();
+        }
+      } catch (e) {
+        if (fullText.isEmpty) {
+          fullText = _ruleFallback(text.trim().toLowerCase());
+          _messages[msgIndex] = ChatMessage(
+            role: MessageRole.assistant,
+            text: fullText,
+            timestamp: streamMsg.timestamp,
+            source: ResponseSource.ruleBased,
+          );
+        }
+      }
+
+      _messages[msgIndex] = ChatMessage(
+        role: MessageRole.assistant,
+        text: fullText,
+        timestamp: streamMsg.timestamp,
+        source: fullText == _ruleFallback(text.trim().toLowerCase())
+            ? ResponseSource.ruleBased
+            : ResponseSource.localLlm,
+      );
+      _isStreaming = false;
+      notifyListeners();
+      return;
+    }
 
     // 3. Rule-based fallback
-    final fallback = _ruleFallback(query.toLowerCase());
-    return (response: fallback, source: ResponseSource.ruleBased);
+    await Future.delayed(const Duration(milliseconds: 300));
+    _messages.add(ChatMessage(
+      role: MessageRole.assistant,
+      text: _ruleFallback(text.trim().toLowerCase()),
+      timestamp: DateTime.now(),
+      source: ResponseSource.ruleBased,
+    ));
+    _isProcessing = false;
+    notifyListeners();
   }
 
   String _ruleFallback(String query) {
@@ -114,17 +176,18 @@ class AiAssistant extends ChangeNotifier {
 
     final last = _messages.last;
     if (last.source == ResponseSource.knowledgeBase) {
-      switch (last.category) {
-        case 'traffic_rules':
-          return ['Helmet law', 'Number coding', 'Speed limit'];
-        case 'platform_policies':
-          return ['Best platform?', 'Peak hours', 'Incentive tips'];
-        case 'maintenance':
-          return ['Oil change', 'Brake check', 'Tune up schedule'];
-        case 'earnings':
-          return ['Platform comparison', 'Daily target', 'Fuel cost'];
-        case 'emergency':
-          return ['Accident what to do', 'Nearest hospital', 'Stolen motor'];
+      final text = last.text.toLowerCase();
+      if (text.contains('edsa') || text.contains('traffic') || text.contains('ban')) {
+        return ['Helmet law', 'Number coding', 'Speed limit'];
+      }
+      if (text.contains('grab') || text.contains('platform') || text.contains('commission')) {
+        return ['Best platform?', 'Peak hours', 'Incentive tips'];
+      }
+      if (text.contains('oil') || text.contains('tire') || text.contains('brake')) {
+        return ['Oil change', 'Brake check', 'Tune up schedule'];
+      }
+      if (text.contains('earnings') || text.contains('kita') || text.contains('ride')) {
+        return ['Platform comparison', 'Daily target', 'Fuel cost'];
       }
     }
 
@@ -144,13 +207,13 @@ class ChatMessage {
   final String text;
   final DateTime timestamp;
   final ResponseSource? source;
-  final String? category;
+  final bool isStreaming;
 
   const ChatMessage({
     required this.role,
     required this.text,
     required this.timestamp,
     this.source,
-    this.category,
+    this.isStreaming = false,
   });
 }

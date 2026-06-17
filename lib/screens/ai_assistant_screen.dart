@@ -94,6 +94,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           Expanded(
             child: Consumer<AiAssistant>(
               builder: (_, ai, __) {
+                // Auto-scroll when streaming
+                if (ai.isStreaming) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scrollToBottom();
+                  });
+                }
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
@@ -173,18 +179,36 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 border: Border.all(
                   color: isUser
                       ? MalateColors.neonMint.withValues(alpha: 0.2)
-                      : c.sidewalk,
+                      : msg.isStreaming
+                          ? MalateColors.electricAmber.withValues(alpha: 0.4)
+                          : c.sidewalk,
                 ),
               ),
-              child: Text(
-                msg.text,
-                style: MalateTypography.bodyMedium.copyWith(
-                  color: c.textPrimary,
-                  height: 1.5,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    msg.text,
+                    style: MalateTypography.bodyMedium.copyWith(
+                      color: c.textPrimary,
+                      height: 1.5,
+                    ),
+                  ),
+                  if (msg.isStreaming) ...[
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: MalateColors.electricAmber.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            if (!isUser && msg.source != null) ...[
+            if (!isUser && msg.source != null && !msg.isStreaming) ...[
               const SizedBox(height: 4),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -226,7 +250,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     final c = MalateColors.of(context);
     return Consumer<AiAssistant>(
       builder: (_, ai, __) {
-        if (ai.isProcessing) return const SizedBox.shrink();
+        if (ai.isProcessing || ai.isStreaming) return const SizedBox.shrink();
         final suggestions = ai.getSuggestions();
         if (suggestions.isEmpty) return const SizedBox.shrink();
 

@@ -9,6 +9,8 @@ import 'core/offline/tile_cache_manager.dart';
 import 'core/battery/battery_saver.dart';
 import 'services/navigation_provider.dart';
 import 'services/ai/ai_assistant.dart';
+import 'services/ai/llm_service.dart';
+import 'services/ai/model_download_manager.dart';
 import 'services/ride_logger.dart';
 import 'services/theme_provider.dart';
 import 'screens/splash_screen.dart';
@@ -32,6 +34,12 @@ void main() async {
   final tileCache = TileCacheManager();
   await tileCache.init();
 
+  final downloadManager = ModelDownloadManager();
+  downloadManager.updateConnectivity(connectivity);
+  await downloadManager.init();
+
+  final llmService = LlmService(downloadManager: downloadManager);
+
   final syncEngine = SyncEngine(connectivity: connectivity);
   final battery = BatterySaver()..start();
 
@@ -44,6 +52,8 @@ void main() async {
     battery: battery,
     themeProvider: themeProvider,
     tileCache: tileCache,
+    downloadManager: downloadManager,
+    llmService: llmService,
   ));
 }
 
@@ -52,6 +62,8 @@ class ArangkadaApp extends StatelessWidget {
   final BatterySaver battery;
   final ThemeProvider themeProvider;
   final TileCacheManager tileCache;
+  final ModelDownloadManager downloadManager;
+  final LlmService llmService;
 
   const ArangkadaApp({
     super.key,
@@ -59,6 +71,8 @@ class ArangkadaApp extends StatelessWidget {
     required this.battery,
     required this.themeProvider,
     required this.tileCache,
+    required this.downloadManager,
+    required this.llmService,
   });
 
   @override
@@ -69,6 +83,8 @@ class ArangkadaApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: battery),
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider.value(value: tileCache),
+        ChangeNotifierProvider.value(value: downloadManager),
+        ChangeNotifierProvider.value(value: llmService),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => RideLogger()..init()),
         ChangeNotifierProxyProvider2<RideLogger, ConnectivityMonitor,
@@ -79,6 +95,7 @@ class ArangkadaApp extends StatelessWidget {
               rideLogger: rideLogger,
               connectivity: connectivity,
             );
+            ai.setLlmService(llmService);
             return ai;
           },
         ),

@@ -2,15 +2,13 @@ class AppConfig {
   AppConfig._();
 
   static const String appName = 'Arangkada AI';
-  static const String appVersion = 'v0.03';
+  static const String appVersion = 'v0.04';
   static const String developer = 'James Earl Medrano';
   static const String appTagline = 'Your 24/7 Rider Road Assistant';
 
   // Map tiles — free, no API key required
-  // CartoDB Voyager: Google Maps-style with streets, buildings, labels
   static const String osmTileUrl =
       'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
-  // Same detailed tiles used for dark mode (color-filtered in code)
   static const String osmTileUrlDark =
       'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
 
@@ -33,9 +31,9 @@ class AppConfig {
   static const double weightCongestion = 0.2;
 
   // Battery Saver Thresholds
-  static const double stationaryThreshold = 0.5; // m/s² acceleration delta
-  static const int stationaryGpsIntervalMs = 30000; // 30s when stopped
-  static const int movingGpsIntervalMs = 3000; // 3s when moving
+  static const double stationaryThreshold = 0.5;
+  static const int stationaryGpsIntervalMs = 30000;
+  static const int movingGpsIntervalMs = 3000;
 
   // Offline Sync
   static const int syncBatchSize = 50;
@@ -47,7 +45,7 @@ class AppConfig {
   static const double navVoiceAnnounce500m = 500.0;
   static const double navVoiceAnnounce200m = 200.0;
   static const double navVoiceAnnounceNow = 40.0;
-  static const double navLowSpeedThreshold = 2.0; // m/s (~7 km/h)
+  static const double navLowSpeedThreshold = 2.0;
   static const int navMaxCachedRoutes = 5;
 
   // Offline Map Tile Download
@@ -57,6 +55,14 @@ class AppConfig {
   static const double metroManilaMaxLng = 121.15;
   static const int tileDownloadMinZoom = 10;
   static const int tileDownloadMaxZoom = 17;
+
+  // On-Device LLM (Gemma 2B)
+  static const String gemmaModelUrl =
+      'https://huggingface.co/lmstudio-community/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf';
+  static const String gemmaModelFilename = 'gemma-2-2b-it-Q4_K_M.gguf';
+  static const int gemmaModelSizeBytes = 1500000000; // ~1.5 GB
+  static const int llmMaxTokens = 256;
+  static const int llmTimeoutSeconds = 30;
 
   // Firebase Free Tier Guardrails
   static const int maxFirestoreWritesPerDay = 20000;

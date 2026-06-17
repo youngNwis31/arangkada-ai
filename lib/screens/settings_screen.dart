@@ -6,6 +6,8 @@ import '../config/theme/malate_typography.dart';
 import '../core/offline/connectivity_monitor.dart';
 import '../core/offline/tile_cache_manager.dart';
 import '../core/battery/battery_saver.dart';
+import '../services/ai/llm_service.dart';
+import '../services/ai/model_download_manager.dart';
 import '../services/ride_logger.dart';
 import '../services/theme_provider.dart';
 import '../widgets/malate_card.dart';
@@ -136,15 +138,11 @@ class SettingsScreen extends StatelessWidget {
             );
           }),
           const SizedBox(height: 10),
-          _settingsTile(
-            context,
-            icon: Icons.smart_toy,
-            color: MalateColors.cyberCyan,
-            title: 'AI Model',
-            subtitle: 'v0.01 — Rule-based (Local SLM coming soon)',
-            onTap: () {},
-          ),
+
+          // ── AI Model Tile (Phase 4) ──
+          _aiModelTile(context),
           const SizedBox(height: 10),
+
           _settingsTile(
             context,
             icon: Icons.record_voice_over,
@@ -330,6 +328,290 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _aiModelTile(BuildContext context) {
+    final c = MalateColors.of(context);
+    final dm = context.watch<ModelDownloadManager>();
+    final llm = context.watch<LlmService>();
+
+    String subtitle;
+    Color statusColor;
+    IconData statusIcon;
+
+    switch (dm.state) {
+      case DownloadState.idle:
+        subtitle = 'Gemma 2B — Tap to download (~1.5 GB)';
+        statusColor = MalateColors.cyberCyan;
+        statusIcon = Icons.download;
+      case DownloadState.downloading:
+        subtitle = 'Downloading... ${dm.downloadedSizeMB} / ${dm.totalSizeMB} MB';
+        statusColor = MalateColors.electricAmber;
+        statusIcon = Icons.downloading;
+      case DownloadState.paused:
+        subtitle = 'Paused — ${dm.downloadedSizeMB} MB downloaded';
+        statusColor = MalateColors.electricAmber;
+        statusIcon = Icons.pause_circle;
+      case DownloadState.verifying:
+        subtitle = 'Verifying model...';
+        statusColor = MalateColors.electricAmber;
+        statusIcon = Icons.verified;
+      case DownloadState.done:
+        subtitle = 'Ready — Local AI active';
+        statusColor = MalateColors.neonMint;
+        statusIcon = Icons.psychology;
+      case DownloadState.error:
+        subtitle = dm.errorMessage ?? 'Error — tap to retry';
+        statusColor = MalateColors.hazardRed;
+        statusIcon = Icons.error_outline;
+    }
+
+    return MalateCard(
+      onTap: () => _showAiModelSheet(context),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(statusIcon, color: statusColor, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('AI Model',
+                        style: MalateTypography.headlineSmall
+                            .copyWith(fontSize: 15)),
+                    Text(subtitle, style: MalateTypography.bodySmall),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: c.textMuted),
+            ],
+          ),
+          if (dm.state == DownloadState.downloading) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: dm.progress,
+                backgroundColor: c.sidewalk,
+                valueColor: AlwaysStoppedAnimation(MalateColors.electricAmber),
+                minHeight: 4,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showAiModelSheet(BuildContext context) {
+    final c = MalateColors.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: c.asphalt,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Consumer2<ModelDownloadManager, LlmService>(
+          builder: (_, dm, llm, __) {
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: c.sidewalk,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      const Icon(Icons.psychology,
+                          color: MalateColors.electricAmber, size: 28),
+                      const SizedBox(width: 12),
+                      Text('AI MODEL',
+                          style: MalateTypography.neonAccent(
+                              MalateColors.electricAmber)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // AI Tiers
+                  _aiTierRow(
+                    context,
+                    icon: Icons.menu_book,
+                    color: MalateColors.neonMint,
+                    name: 'Knowledge Base',
+                    status: '100+ topics',
+                    isActive: true,
+                  ),
+                  const SizedBox(height: 12),
+                  _aiTierRow(
+                    context,
+                    icon: Icons.psychology,
+                    color: MalateColors.electricAmber,
+                    name: 'Local AI (Gemma 2B)',
+                    status: llm.statusText,
+                    isActive: dm.state == DownloadState.done,
+                  ),
+                  const SizedBox(height: 12),
+                  _aiTierRow(
+                    context,
+                    icon: Icons.cloud,
+                    color: MalateColors.cyberCyan,
+                    name: 'Gemini Flash',
+                    status: 'Coming soon',
+                    isActive: false,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Actions
+                  if (dm.state == DownloadState.idle ||
+                      dm.state == DownloadState.error) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          dm.startDownload();
+                          Navigator.pop(ctx);
+                        },
+                        icon: const Icon(Icons.download),
+                        label: const Text('DOWNLOAD GEMMA 2B (~1.5 GB)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: MalateColors.electricAmber,
+                          foregroundColor: c.midnight,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (dm.state == DownloadState.error) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        dm.errorMessage ?? 'Unknown error',
+                        style: MalateTypography.bodySmall
+                            .copyWith(color: MalateColors.hazardRed),
+                      ),
+                    ],
+                  ],
+                  if (dm.state == DownloadState.downloading) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          dm.cancelDownload();
+                          Navigator.pop(ctx);
+                        },
+                        icon: const Icon(Icons.cancel),
+                        label: const Text('CANCEL DOWNLOAD'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: MalateColors.hazardRed,
+                          side: const BorderSide(color: MalateColors.hazardRed),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (dm.state == DownloadState.done) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          dm.deleteModel();
+                          Navigator.pop(ctx);
+                        },
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('DELETE MODEL'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: MalateColors.hazardRed,
+                          side: const BorderSide(color: MalateColors.hazardRed),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  SizedBox(height: MediaQuery.of(ctx).padding.bottom + 8),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _aiTierRow(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String name,
+    required String status,
+    required bool isActive,
+  }) {
+    final c = MalateColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isActive ? color.withValues(alpha: 0.08) : c.gutter,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isActive ? color.withValues(alpha: 0.3) : c.sidewalk,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(name, style: MalateTypography.bodyMedium),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? color.withValues(alpha: 0.15)
+                  : c.sidewalk.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: isActive ? color : c.textMuted,
+              ),
+            ),
+          ),
         ],
       ),
     );
