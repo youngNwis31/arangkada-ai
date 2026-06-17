@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../core/offline/poi_cache.dart';
 import '../models/location_model.dart';
 import '../models/route_model.dart';
 import '../utils/route_optimizer.dart';
@@ -13,6 +15,24 @@ class MapboxService {
   }) async {
     if (query.trim().isEmpty) return [];
 
+    try {
+      final results = await _searchOnline(query,
+          proximityLng: proximityLng, proximityLat: proximityLat);
+      if (results.isNotEmpty) {
+        PoiCache.cachePois(results, category: 'search');
+      }
+      return results;
+    } catch (e) {
+      debugPrint('Search offline fallback: $e');
+      return PoiCache.searchOffline(query);
+    }
+  }
+
+  static Future<List<LocationModel>> _searchOnline(
+    String query, {
+    double? proximityLng,
+    double? proximityLat,
+  }) async {
     final params = <String, String>{
       'q': query,
       'format': 'json',
@@ -33,7 +53,7 @@ class MapboxService {
 
     final response = await http.get(url, headers: {
       'User-Agent': 'ArangkadaAI/0.03 (rider-nav-app)',
-    });
+    }).timeout(const Duration(seconds: 10));
     if (response.statusCode != 200) return [];
 
     final data = json.decode(response.body) as List;

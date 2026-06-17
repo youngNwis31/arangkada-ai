@@ -16,7 +16,7 @@ class LocalDatabase {
 
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE hazard_reports (
@@ -84,6 +84,7 @@ class LocalDatabase {
 
         await _createCachedRoutesTable(db);
         await _createRideLogTables(db);
+        await _createCachedPoisTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -91,6 +92,9 @@ class LocalDatabase {
         }
         if (oldVersion < 3) {
           await _createRideLogTables(db);
+        }
+        if (oldVersion < 4) {
+          await _createCachedPoisTable(db);
         }
       },
     );
@@ -105,6 +109,29 @@ class LocalDatabase {
         route_json TEXT NOT NULL,
         cached_at TEXT NOT NULL
       )
+    ''');
+  }
+
+  static Future<void> _createCachedPoisTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS cached_pois (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        address TEXT,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        category TEXT NOT NULL,
+        place_type TEXT,
+        cached_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_cached_pois_location
+      ON cached_pois (latitude, longitude)
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_cached_pois_category
+      ON cached_pois (category)
     ''');
   }
 

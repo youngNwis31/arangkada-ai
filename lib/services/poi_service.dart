@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../core/offline/poi_cache.dart';
 import '../models/location_model.dart';
 
 enum PoiCategory {
@@ -52,12 +53,14 @@ class PoiService {
         'User-Agent': 'ArangkadaAI/0.03 (rider-nav-app)',
       }).timeout(const Duration(seconds: 15));
 
-      if (response.statusCode != 200) return [];
+      if (response.statusCode != 200) {
+        return _offlineFallback(lat: lat, lng: lng, categories: categories, radius: radius);
+      }
 
       final data = json.decode(response.body);
       final elements = data['elements'] as List? ?? [];
 
-      return elements.map<LocationModel?>((e) {
+      final results = elements.map<LocationModel?>((e) {
         final tags = e['tags'] as Map<String, dynamic>? ?? {};
         final name = tags['name'] as String?;
         if (name == null || name.isEmpty) return null;
@@ -77,9 +80,22 @@ class PoiService {
           placeType: type,
         );
       }).whereType<LocationModel>().toList();
+
+      for (final cat in categories) {
+        final catResults = results.where((r) =>
+            r.placeType == _classifyFromCategory(cat)).toList();
+        if (catResults.isNotEmpty) {
+          PoiCache.cachePois(catResults, category: cat.osmValue);
+        }
+      }
+      if (categories.length > 1 && results.isNotEmpty) {
+        PoiCache.cachePois(results, category: 'mixed');
+      }
+
+      return results;
     } catch (e) {
-      debugPrint('POI fetch error: $e');
-      return [];
+      debugPrint('POI fetch error: $e — falling back to cache');
+      return _offlineFallback(lat: lat, lng: lng, categories: categories, radius: radius);
     }
   }
 
@@ -138,6 +154,41 @@ class PoiService {
     if (amenity == 'parking') return 'parking';
     if (shop.isNotEmpty) return 'shop';
     return 'amenity';
+  }
+
+  static Future<List<LocationModel>> _offlineFallback({
+    required double lat,
+    required double lng,
+    required List<PoiCategory> categories,
+    required int radius,
+  }) async {
+    if (categories.length == 1) {
+      return PoiCache.getNearbyOffline(
+        lat: lat,
+        lng: lng,
+        radiusM: radius.toDouble(),
+        category: categories.first.osmValue,
+      );
+    }
+    return PoiCache.getNearbyOffline(
+      lat: lat,
+      lng: lng,
+      radiusM: radius.toDouble(),
+    );
+  }
+
+  static String _classifyFromCategory(PoiCategory cat) {
+    return switch (cat) {
+      PoiCategory.cafe || PoiCategory.restaurant || PoiCategory.fastFood => 'food',
+      PoiCategory.hospital || PoiCategory.pharmacy => 'health',
+      PoiCategory.school => 'education',
+      PoiCategory.bank || PoiCategory.atm => 'finance',
+      PoiCategory.church => 'worship',
+      PoiCategory.gasStation => 'fuel',
+      PoiCategory.police => 'emergency',
+      PoiCategory.parking => 'parking',
+      PoiCategory.convenience || PoiCategory.supermarket => 'shop',
+    };
   }
 
   static String _buildPoiAddress(Map<String, dynamic> tags) {

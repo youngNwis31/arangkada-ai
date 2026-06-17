@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../config/theme/malate_colors.dart';
 import '../config/theme/malate_typography.dart';
+import '../core/offline/connectivity_monitor.dart';
 import '../models/location_model.dart';
 import '../services/mapbox_service.dart';
 import '../services/poi_service.dart';
@@ -50,6 +52,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Timer? _debounce;
   bool _editingFrom = false;
   String? _browsingCategory;
+  bool _isOfflineResults = false;
 
   String get _activeQuery =>
       _editingFrom ? _fromController.text : _toController.text;
@@ -95,6 +98,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _search(String q) async {
     if (q.trim().length < 2) return;
     setState(() => _searching = true);
+    final isOffline = !context.read<ConnectivityMonitor>().isOnline;
     try {
       final r = await MapboxService.searchPlaces(
         q,
@@ -105,6 +109,7 @@ class _SearchScreenState extends State<SearchScreen> {
         setState(() {
           _results = r;
           _searching = false;
+          _isOfflineResults = isOffline;
         });
       }
     } catch (_) {
@@ -380,6 +385,21 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: Text('BACK',
                       style: MalateTypography.labelSmall
                           .copyWith(color: MalateColors.cyberCyan, fontSize: 11)),
+                ),
+              if (_isOfflineResults)
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: MalateColors.electricAmber.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text('OFFLINE',
+                      style: MalateTypography.labelSmall.copyWith(
+                          color: MalateColors.electricAmber,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold)),
                 ),
               Text(' ${_results.length} found',
                   style: MalateTypography.labelSmall
