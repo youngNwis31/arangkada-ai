@@ -50,6 +50,14 @@ class AppConfig {
   static const double navLowSpeedThreshold = 2.0; // m/s (~7 km/h)
   static const int navMaxCachedRoutes = 5;
 
+  // Offline Map Tile Download
+  static const double metroManilaMinLat = 14.35;
+  static const double metroManilaMaxLat = 14.78;
+  static const double metroManilaMinLng = 120.85;
+  static const double metroManilaMaxLng = 121.15;
+  static const int tileDownloadMinZoom = 10;
+  static const int tileDownloadMaxZoom = 17;
+
   // Firebase Free Tier Guardrails
   static const int maxFirestoreWritesPerDay = 20000;
   static const int maxFirestoreReadsPerDay = 50000;

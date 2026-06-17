@@ -5,6 +5,7 @@ import 'config/theme/malate_theme.dart';
 import 'config/app_config.dart';
 import 'core/offline/connectivity_monitor.dart';
 import 'core/offline/sync_engine.dart';
+import 'core/offline/tile_cache_manager.dart';
 import 'core/battery/battery_saver.dart';
 import 'services/navigation_provider.dart';
 import 'services/ai/ai_assistant.dart';
@@ -20,11 +21,16 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
 
+  await TileCacheManager.initBackend();
+
   final themeProvider = ThemeProvider();
   await themeProvider.init();
 
   final connectivity = ConnectivityMonitor();
   await connectivity.init();
+
+  final tileCache = TileCacheManager();
+  await tileCache.init();
 
   final syncEngine = SyncEngine(connectivity: connectivity);
   final battery = BatterySaver()..start();
@@ -37,6 +43,7 @@ void main() async {
     connectivity: connectivity,
     battery: battery,
     themeProvider: themeProvider,
+    tileCache: tileCache,
   ));
 }
 
@@ -44,12 +51,14 @@ class ArangkadaApp extends StatelessWidget {
   final ConnectivityMonitor connectivity;
   final BatterySaver battery;
   final ThemeProvider themeProvider;
+  final TileCacheManager tileCache;
 
   const ArangkadaApp({
     super.key,
     required this.connectivity,
     required this.battery,
     required this.themeProvider,
+    required this.tileCache,
   });
 
   @override
@@ -59,6 +68,7 @@ class ArangkadaApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: connectivity),
         ChangeNotifierProvider.value(value: battery),
         ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: tileCache),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => AiAssistant()),
         ChangeNotifierProvider(create: (_) => RideLogger()..init()),

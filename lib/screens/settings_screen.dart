@@ -4,6 +4,7 @@ import '../config/app_config.dart';
 import '../config/theme/malate_colors.dart';
 import '../config/theme/malate_typography.dart';
 import '../core/offline/connectivity_monitor.dart';
+import '../core/offline/tile_cache_manager.dart';
 import '../core/battery/battery_saver.dart';
 import '../services/ride_logger.dart';
 import '../services/theme_provider.dart';
@@ -11,6 +12,7 @@ import '../widgets/malate_card.dart';
 import 'earnings_screen.dart';
 import 'fuel_calculator_screen.dart';
 import 'hotspot_screen.dart';
+import 'offline_maps_screen.dart';
 import 'safety_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -115,19 +117,24 @@ class SettingsScreen extends StatelessWidget {
           // ── Features ──
           _sectionHeader(context, 'FEATURES'),
           const SizedBox(height: 12),
-          _settingsTile(
-            context,
-            icon: Icons.cloud_download,
-            color: MalateColors.cyberCyan,
-            title: 'Offline Maps',
-            subtitle: 'Pre-download maps for dead zones',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Offline Maps — coming in next update')),
-              );
-            },
-          ),
+          Builder(builder: (context) {
+            final cache = context.watch<TileCacheManager>();
+            final subtitle = cache.hasDownload
+                ? 'Metro Manila — ${cache.storeSizeMB.toStringAsFixed(0)} MB'
+                : 'Download maps for dead zones';
+            return _settingsTile(
+              context,
+              icon: Icons.cloud_download,
+              color: MalateColors.cyberCyan,
+              title: 'Offline Maps',
+              subtitle: subtitle,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const OfflineMapsScreen()),
+              ),
+            );
+          }),
           const SizedBox(height: 10),
           _settingsTile(
             context,

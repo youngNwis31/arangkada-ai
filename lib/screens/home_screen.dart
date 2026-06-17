@@ -7,6 +7,7 @@ import '../config/theme/malate_colors.dart';
 import '../models/location_model.dart';
 import '../config/theme/malate_typography.dart';
 import '../core/offline/connectivity_monitor.dart';
+import '../core/offline/tile_cache_manager.dart';
 import '../services/navigation_provider.dart';
 import '../services/poi_service.dart';
 import '../widgets/signal_indicator.dart';
@@ -177,6 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     userAgentPackageName: 'com.arangkada.arangkadaAi',
                     maxZoom: 19,
                     retinaMode: true,
+                    tileProvider: context.read<TileCacheManager>().tileProvider,
                     tileBuilder: isDark ? _darkTileBuilder : null,
                   ),
                   if (nav.routes.isNotEmpty)

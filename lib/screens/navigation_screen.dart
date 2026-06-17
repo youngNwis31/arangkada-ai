@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../config/theme/malate_colors.dart';
 import '../config/theme/malate_typography.dart';
+import '../core/offline/tile_cache_manager.dart';
 import '../services/navigation_provider.dart';
 import '../services/offline_nav_engine.dart';
 import '../widgets/nav_instruction_card.dart';
@@ -142,6 +143,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                     userAgentPackageName: 'com.arangkada.arangkadaAi',
                     maxZoom: 19,
                     retinaMode: true,
+                    tileProvider: context.read<TileCacheManager>().tileProvider,
                     tileBuilder: isDark ? _darkTileBuilder : null,
                   ),
                   PolylineLayer(polylines: _buildRoutePolyline(nav)),
