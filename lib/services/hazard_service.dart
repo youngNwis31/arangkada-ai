@@ -29,4 +29,24 @@ class HazardService {
     final rows = await LocalDatabase.getNearbyHazards(lat, lng, 2.0);
     return rows.map((r) => HazardReport.fromDb(r)).toList();
   }
+
+  static Future<List<HazardReport>> getNearbyFloodReports(
+      double lat, double lng) async {
+    final rows = await LocalDatabase.getNearbyFloodReports(lat, lng, 2.0);
+    return rows.map((r) => HazardReport.fromDb(r)).toList();
+  }
+
+  static Future<List<HazardReport>> getFloodReportsAlongRoute(
+      List<List<double>> coordinates,
+      {double radiusKm = 0.5}) async {
+    final floods = <HazardReport>{};
+    final step = (coordinates.length / 10).ceil().clamp(1, coordinates.length);
+    for (int i = 0; i < coordinates.length; i += step) {
+      final coord = coordinates[i];
+      final rows =
+          await LocalDatabase.getNearbyFloodReports(coord[1], coord[0], radiusKm);
+      floods.addAll(rows.map((r) => HazardReport.fromDb(r)));
+    }
+    return floods.toList();
+  }
 }

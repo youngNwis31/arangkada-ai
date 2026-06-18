@@ -16,7 +16,7 @@ class LocalDatabase {
 
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE hazard_reports (
@@ -85,6 +85,7 @@ class LocalDatabase {
         await _createCachedRoutesTable(db);
         await _createRideLogTables(db);
         await _createCachedPoisTable(db);
+        await _createWeatherCacheTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -95,6 +96,9 @@ class LocalDatabase {
         }
         if (oldVersion < 4) {
           await _createCachedPoisTable(db);
+        }
+        if (oldVersion < 5) {
+          await _createWeatherCacheTable(db);
         }
       },
     );
@@ -159,6 +163,69 @@ class LocalDatabase {
         value TEXT NOT NULL
       )
     ''');
+  }
+
+  static Future<void> _createWeatherCacheTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS weather_cache (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        temperature REAL,
+        weather_code INTEGER,
+        wind_speed REAL,
+        humidity INTEGER,
+        rain_mm REAL,
+        fetched_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  // ── Weather Cache ──
+  static Future<void> insertWeatherCache(Map<String, dynamic> data) async {
+    final db = await instance;
+    await db.insert('weather_cache', data);
+    final all = await db.query('weather_cache', orderBy: 'fetched_at DESC');
+    if (all.length > 10) {
+      final toDelete = all.sublist(10);
+      for (final row in toDelete) {
+        await db.delete('weather_cache',
+            where: 'id = ?', whereArgs: [row['id']]);
+      }
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getLatestWeather() async {
+    final db = await instance;
+    final rows = await db.query('weather_cache',
+        orderBy: 'fetched_at DESC', limit: 1);
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  // ── Flood Reports ──
+  static Future<List<Map<String, dynamic>>> getNearbyFloodReports(
+      double lat, double lng, double radiusKm) async {
+    final db = await instance;
+    final delta = radiusKm / 111.0;
+    return db.query(
+      'hazard_reports',
+      where:
+          'type IN (?, ?, ?, ?) AND latitude BETWEEN ? AND ? AND longitude BETWEEN ? AND ? AND created_at > ?',
+      whereArgs: [
+        'flooding',
+        'floodAnkle',
+        'floodKnee',
+        'floodImpassable',
+        lat - delta,
+        lat + delta,
+        lng - delta,
+        lng + delta,
+        DateTime.now()
+            .subtract(const Duration(hours: 6))
+            .toIso8601String(),
+      ],
+      orderBy: 'created_at DESC',
+    );
   }
 
   // ── Ride Logs ──

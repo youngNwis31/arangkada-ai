@@ -15,6 +15,7 @@ import 'services/ai/model_download_manager.dart';
 import 'services/ride_logger.dart';
 import 'services/theme_provider.dart';
 import 'services/voice_command_service.dart';
+import 'services/weather_service.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -46,6 +47,9 @@ void main() async {
   final voiceCommand = VoiceCommandService();
   await voiceCommand.init();
 
+  final weatherService = WeatherService();
+  weatherService.updateConnectivity(connectivity);
+
   final syncEngine = SyncEngine(connectivity: connectivity);
   final battery = BatterySaver()..start();
 
@@ -62,6 +66,7 @@ void main() async {
     llmService: llmService,
     geminiService: geminiService,
     voiceCommand: voiceCommand,
+    weatherService: weatherService,
   ));
 }
 
@@ -74,6 +79,7 @@ class ArangkadaApp extends StatelessWidget {
   final LlmService llmService;
   final GeminiService geminiService;
   final VoiceCommandService voiceCommand;
+  final WeatherService weatherService;
 
   const ArangkadaApp({
     super.key,
@@ -85,6 +91,7 @@ class ArangkadaApp extends StatelessWidget {
     required this.llmService,
     required this.geminiService,
     required this.voiceCommand,
+    required this.weatherService,
   });
 
   @override
@@ -98,6 +105,7 @@ class ArangkadaApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: downloadManager),
         ChangeNotifierProvider.value(value: llmService),
         Provider.value(value: geminiService),
+        ChangeNotifierProvider.value(value: weatherService),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => RideLogger()..init()),
         ChangeNotifierProxyProvider2<RideLogger, ConnectivityMonitor,

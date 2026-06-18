@@ -10,6 +10,9 @@ import '../services/navigation_provider.dart';
 import '../services/offline_nav_engine.dart';
 import '../widgets/nav_instruction_card.dart';
 import '../widgets/voice_fab.dart';
+import '../widgets/flood_marker.dart';
+import '../services/hazard_service.dart';
+import '../models/hazard_report.dart';
 
 Widget _darkTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
   return ColorFiltered(
@@ -33,13 +36,33 @@ class NavigationScreen extends StatefulWidget {
 class _NavigationScreenState extends State<NavigationScreen> {
   final MapController _mapController = MapController();
   bool _initialZoomDone = false;
+  List<HazardReport> _floodReports = [];
+  bool _showFloodBanner = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NavigationProvider>().startNavigation();
+      _checkFloodZones();
     });
+  }
+
+  Future<void> _checkFloodZones() async {
+    final nav = context.read<NavigationProvider>();
+    final route = nav.selectedRoute;
+    if (route == null) return;
+    final floods = await HazardService.getFloodReportsAlongRoute(
+        route.coordinates);
+    if (mounted && floods.isNotEmpty) {
+      setState(() {
+        _floodReports = floods;
+        _showFloodBanner = true;
+      });
+      Future.delayed(const Duration(seconds: 8), () {
+        if (mounted) setState(() => _showFloodBanner = false);
+      });
+    }
   }
 
   LatLng _riderPosition(NavigationProvider nav) {
@@ -148,6 +171,15 @@ class _NavigationScreenState extends State<NavigationScreen> {
                     tileBuilder: isDark ? _darkTileBuilder : null,
                   ),
                   PolylineLayer(polylines: _buildRoutePolyline(nav)),
+                  if (_floodReports.isNotEmpty)
+                    MarkerLayer(
+                      markers: _floodReports.map((report) => Marker(
+                        point: LatLng(report.latitude, report.longitude),
+                        width: 32,
+                        height: 32,
+                        child: FloodMarker(report: report),
+                      )).toList(),
+                    ),
                   MarkerLayer(
                     markers: [
                       Marker(
@@ -242,6 +274,45 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 left: 16,
                 child: const VoiceFab(),
               ),
+
+              if (_showFloodBanner)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 60,
+                  left: 16,
+                  right: 80,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1565C0).withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: MalateColors.cyberCyan.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.water_drop,
+                            color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'FLOOD ZONE AHEAD — ${_floodReports.length} report${_floodReports.length > 1 ? 's' : ''}',
+                            style: MalateTypography.labelMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _showFloodBanner = false),
+                          child: const Icon(Icons.close,
+                              color: Colors.white70, size: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           );
         },

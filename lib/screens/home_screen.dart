@@ -18,6 +18,11 @@ import 'hazard_report_screen.dart';
 import 'fare_estimator_screen.dart';
 import 'navigation_screen.dart';
 import '../widgets/voice_fab.dart';
+import '../widgets/weather_widget.dart';
+import '../widgets/flood_marker.dart';
+import '../services/weather_service.dart';
+import '../services/hazard_service.dart';
+import '../models/hazard_report.dart';
 
 Widget _darkTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
   return ColorFiltered(
@@ -43,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<LocationModel> _pois = [];
   PoiCategory? _activeCategory;
   final bool _showPois = true;
+  List<HazardReport> _floodReports = [];
 
   static const _poiChips = [
     PoiCategory.cafe,
@@ -60,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NavigationProvider>().initLocation();
       _loadDefaultPois();
+      _loadWeatherAndFloods();
     });
   }
 
@@ -73,6 +80,19 @@ class _HomeScreenState extends State<HomeScreen> {
         _pois = results;
         _activeCategory = null;
       });
+    }
+  }
+
+  Future<void> _loadWeatherAndFloods() async {
+    final nav = context.read<NavigationProvider>();
+    final lat = nav.currentLocation?.latitude ?? AppConfig.defaultLat;
+    final lng = nav.currentLocation?.longitude ?? AppConfig.defaultLng;
+    final weather = context.read<WeatherService>();
+    await weather.fetchWeather(lat, lng);
+    weather.startAutoRefresh(lat, lng);
+    final floods = await HazardService.getNearbyFloodReports(lat, lng);
+    if (mounted) {
+      setState(() => _floodReports = floods);
     }
   }
 
@@ -194,6 +214,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: _PoiMarker(poi: poi, onTap: () => _onPoiTap(poi)),
                       )).toList(),
                     ),
+                  if (_floodReports.isNotEmpty)
+                    MarkerLayer(
+                      markers: _floodReports.map((report) => Marker(
+                        point: LatLng(report.latitude, report.longitude),
+                        width: 32,
+                        height: 32,
+                        child: FloodMarker(report: report),
+                      )).toList(),
+                    ),
                   if (nav.currentLocation != null)
                     MarkerLayer(
                       markers: [
@@ -254,6 +283,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       if (!nav.hasRoute) ...[
+                        const SizedBox(height: 8),
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: WeatherWidget(),
+                        ),
                         const SizedBox(height: 8),
                         SizedBox(
                           height: 36,

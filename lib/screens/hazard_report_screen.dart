@@ -20,7 +20,9 @@ class _HazardReportScreenState extends State<HazardReportScreen> {
 
   final _hazardOptions = [
     (HazardType.pothole, Icons.dangerous, MalateColors.electricAmber),
-    (HazardType.flooding, Icons.water, MalateColors.cyberCyan),
+    (HazardType.floodAnkle, Icons.water_drop, MalateColors.cyberCyan),
+    (HazardType.floodKnee, Icons.water_drop, const Color(0xFF2196F3)),
+    (HazardType.floodImpassable, Icons.water_drop, const Color(0xFF1565C0)),
     (HazardType.checkpoint, Icons.local_police, MalateColors.neonMint),
     (HazardType.accident, Icons.car_crash, MalateColors.hazardRed),
     (HazardType.roadClosure, Icons.block, MalateColors.hazardRed),

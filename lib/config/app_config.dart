@@ -69,6 +69,12 @@ class AppConfig {
   static const int geminiMaxRpm = 15;
   static const int geminiMaxRpd = 1500;
 
+  // Weather & Flood Alerts
+  static const String openMeteoUrl =
+      'https://api.open-meteo.com/v1/forecast';
+  static const int floodReportExpiryHours = 6;
+  static const int weatherRefreshMinutes = 30;
+
   // Firebase Free Tier Guardrails
   static const int maxFirestoreWritesPerDay = 20000;
   static const int maxFirestoreReadsPerDay = 50000;
