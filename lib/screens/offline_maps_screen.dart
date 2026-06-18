@@ -123,7 +123,7 @@ class OfflineMapsScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'All 16 cities • Zoom 10-17',
+                              'All 16 cities • Zoom 13-15',
                               style: MalateTypography.bodySmall
                                   .copyWith(color: c.textMuted),
                             ),

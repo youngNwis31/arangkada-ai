@@ -8,6 +8,7 @@ import '../core/offline/tile_cache_manager.dart';
 import '../core/battery/battery_saver.dart';
 import '../services/ai/llm_service.dart';
 import '../services/ai/model_download_manager.dart';
+import '../services/ai/gemini_service.dart';
 import '../services/ride_logger.dart';
 import '../services/theme_provider.dart';
 import '../widgets/malate_card.dart';
@@ -344,7 +345,7 @@ class SettingsScreen extends StatelessWidget {
 
     switch (dm.state) {
       case DownloadState.idle:
-        subtitle = 'Gemma 2B — Tap to download (~1.5 GB)';
+        subtitle = 'Qwen 0.5B — Tap to manage (~200 MB)';
         statusColor = MalateColors.cyberCyan;
         statusIcon = Icons.download;
       case DownloadState.downloading:
@@ -427,6 +428,7 @@ class SettingsScreen extends StatelessWidget {
       builder: (ctx) {
         return Consumer2<ModelDownloadManager, LlmService>(
           builder: (_, dm, llm, __) {
+            final gemini = Provider.of<GeminiService>(ctx, listen: false);
             return Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -470,7 +472,7 @@ class SettingsScreen extends StatelessWidget {
                     context,
                     icon: Icons.psychology,
                     color: MalateColors.electricAmber,
-                    name: 'Local AI (Gemma 2B)',
+                    name: 'Local AI (Qwen 0.5B)',
                     status: llm.statusText,
                     isActive: dm.state == DownloadState.done,
                   ),
@@ -479,9 +481,11 @@ class SettingsScreen extends StatelessWidget {
                     context,
                     icon: Icons.cloud,
                     color: MalateColors.cyberCyan,
-                    name: 'Gemini Flash',
-                    status: 'Coming soon',
-                    isActive: false,
+                    name: 'Gemini Flash (Online)',
+                    status: gemini.hasApiKey
+                        ? (gemini.isAvailable ? 'Connected' : 'Offline')
+                        : 'No API Key',
+                    isActive: gemini.hasApiKey,
                   ),
 
                   const SizedBox(height: 24),
@@ -497,7 +501,7 @@ class SettingsScreen extends StatelessWidget {
                           Navigator.pop(ctx);
                         },
                         icon: const Icon(Icons.download),
-                        label: const Text('DOWNLOAD GEMMA 2B (~1.5 GB)'),
+                        label: const Text('DOWNLOAD QWEN 0.5B (~200 MB)'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: MalateColors.electricAmber,
                           foregroundColor: c.midnight,
@@ -560,6 +564,43 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ],
 
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                  Text('GEMINI API KEY',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: MalateColors.cyberCyan,
+                        letterSpacing: 1.5,
+                      )),
+                  const SizedBox(height: 8),
+                  Text(
+                    gemini.hasApiKey
+                        ? 'API key configured — Gemini active when online'
+                        : 'Optional: Add a free API key from Google AI Studio',
+                    style: MalateTypography.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showApiKeyDialog(context);
+                      },
+                      icon: Icon(gemini.hasApiKey ? Icons.edit : Icons.key),
+                      label: Text(gemini.hasApiKey ? 'CHANGE API KEY' : 'ADD API KEY'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: MalateColors.cyberCyan,
+                        side: const BorderSide(color: MalateColors.cyberCyan),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
                   SizedBox(height: MediaQuery.of(ctx).padding.bottom + 8),
                 ],
               ),
@@ -611,6 +652,66 @@ class SettingsScreen extends StatelessWidget {
                 color: isActive ? color : c.textMuted,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  void _showApiKeyDialog(BuildContext context) {
+    final c = MalateColors.of(context);
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: c.asphalt,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Gemini API Key', style: MalateTypography.headlineMedium),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Get a free key from Google AI Studio. '
+              'Free tier: 15 requests/min, 1,500/day.',
+              style: MalateTypography.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              style: MalateTypography.bodyMedium.copyWith(color: c.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Paste API key here...',
+                hintStyle: MalateTypography.bodyMedium.copyWith(color: c.textMuted),
+                filled: true,
+                fillColor: c.gutter,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('CANCEL', style: TextStyle(color: c.textMuted)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final key = controller.text.trim();
+              if (key.isNotEmpty) {
+                Provider.of<GeminiService>(context, listen: false).setApiKey(key);
+              }
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MalateColors.cyberCyan,
+              foregroundColor: c.midnight,
+            ),
+            child: const Text('SAVE'),
           ),
         ],
       ),

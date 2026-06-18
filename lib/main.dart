@@ -9,6 +9,7 @@ import 'core/offline/tile_cache_manager.dart';
 import 'core/battery/battery_saver.dart';
 import 'services/navigation_provider.dart';
 import 'services/ai/ai_assistant.dart';
+import 'services/ai/gemini_service.dart';
 import 'services/ai/llm_service.dart';
 import 'services/ai/model_download_manager.dart';
 import 'services/ride_logger.dart';
@@ -39,6 +40,7 @@ void main() async {
   await downloadManager.init();
 
   final llmService = LlmService(downloadManager: downloadManager);
+  final geminiService = GeminiService(connectivity: connectivity);
 
   final syncEngine = SyncEngine(connectivity: connectivity);
   final battery = BatterySaver()..start();
@@ -54,6 +56,7 @@ void main() async {
     tileCache: tileCache,
     downloadManager: downloadManager,
     llmService: llmService,
+    geminiService: geminiService,
   ));
 }
 
@@ -64,6 +67,7 @@ class ArangkadaApp extends StatelessWidget {
   final TileCacheManager tileCache;
   final ModelDownloadManager downloadManager;
   final LlmService llmService;
+  final GeminiService geminiService;
 
   const ArangkadaApp({
     super.key,
@@ -73,6 +77,7 @@ class ArangkadaApp extends StatelessWidget {
     required this.tileCache,
     required this.downloadManager,
     required this.llmService,
+    required this.geminiService,
   });
 
   @override
@@ -85,6 +90,7 @@ class ArangkadaApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: tileCache),
         ChangeNotifierProvider.value(value: downloadManager),
         ChangeNotifierProvider.value(value: llmService),
+        Provider.value(value: geminiService),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => RideLogger()..init()),
         ChangeNotifierProxyProvider2<RideLogger, ConnectivityMonitor,
@@ -96,6 +102,7 @@ class ArangkadaApp extends StatelessWidget {
               connectivity: connectivity,
             );
             ai.setLlmService(llmService);
+            ai.setGeminiService(geminiService);
             return ai;
           },
         ),

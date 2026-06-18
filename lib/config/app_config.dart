@@ -6,11 +6,11 @@ class AppConfig {
   static const String developer = 'James Earl Medrano';
   static const String appTagline = 'Your 24/7 Rider Road Assistant';
 
-  // Map tiles — free, no API key required
+  // Map tiles — free, no API key required (@1x saves ~50% vs @2x)
   static const String osmTileUrl =
-      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
+      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
   static const String osmTileUrlDark =
-      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
+      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
 
   // OSRM Directions — free, no API key
   static const String osrmDirectionsUrl =
@@ -53,16 +53,21 @@ class AppConfig {
   static const double metroManilaMaxLat = 14.78;
   static const double metroManilaMinLng = 120.85;
   static const double metroManilaMaxLng = 121.15;
-  static const int tileDownloadMinZoom = 10;
-  static const int tileDownloadMaxZoom = 17;
+  static const int tileDownloadMinZoom = 13;
+  static const int tileDownloadMaxZoom = 15;
 
-  // On-Device LLM (Gemma 2B)
+  // On-Device LLM (Qwen2.5 0.5B Q2_K — ultra-light, ~200 MB)
   static const String gemmaModelUrl =
-      'https://huggingface.co/lmstudio-community/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf';
-  static const String gemmaModelFilename = 'gemma-2-2b-it-Q4_K_M.gguf';
-  static const int gemmaModelSizeBytes = 1500000000; // ~1.5 GB
+      'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q2_k.gguf';
+  static const String gemmaModelFilename = 'qwen2.5-0.5b-instruct-q2_k.gguf';
+  static const int gemmaModelSizeBytes = 200000000;
   static const int llmMaxTokens = 256;
   static const int llmTimeoutSeconds = 30;
+
+  // Gemini Flash (Online AI)
+  static const String geminiModel = 'gemini-2.0-flash';
+  static const int geminiMaxRpm = 15;
+  static const int geminiMaxRpd = 1500;
 
   // Firebase Free Tier Guardrails
   static const int maxFirestoreWritesPerDay = 20000;

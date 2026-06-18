@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../ride_logger.dart';
 import '../../core/offline/connectivity_monitor.dart';
+import 'ai_router.dart';
+import 'gemini_service.dart';
 import 'knowledge_base.dart';
 import 'ai_context.dart';
 import 'llm_service.dart';
@@ -15,6 +17,8 @@ class AiAssistant extends ChangeNotifier {
   RideLogger? _rideLogger;
   ConnectivityMonitor? _connectivity;
   LlmService? _llmService;
+  GeminiService? _geminiService;
+  AiRouter? _router;
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   bool get isProcessing => _isProcessing;
@@ -26,10 +30,31 @@ class AiAssistant extends ChangeNotifier {
   }) {
     _rideLogger = rideLogger;
     _connectivity = connectivity;
+    _rebuildRouter();
   }
 
   void setLlmService(LlmService service) {
     _llmService = service;
+    _rebuildRouter();
+  }
+
+  void setGeminiService(GeminiService service) {
+    _geminiService = service;
+    _rebuildRouter();
+  }
+
+  void _rebuildRouter() {
+    if (_rideLogger != null &&
+        _connectivity != null &&
+        _llmService != null &&
+        _geminiService != null) {
+      _router = AiRouter(
+        geminiService: _geminiService!,
+        llmService: _llmService!,
+        rideLogger: _rideLogger!,
+        connectivity: _connectivity!,
+      );
+    }
   }
 
   AiAssistant() {
@@ -44,6 +69,20 @@ class AiAssistant extends ChangeNotifier {
     ));
   }
 
+  List<Map<String, String>> _recentHistory() {
+    final history = <Map<String, String>>[];
+    final recent = _messages.length > 10
+        ? _messages.sublist(_messages.length - 10)
+        : _messages;
+    for (final msg in recent) {
+      history.add({
+        'role': msg.role == MessageRole.user ? 'user' : 'model',
+        'text': msg.text,
+      });
+    }
+    return history;
+  }
+
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
@@ -55,89 +94,82 @@ class AiAssistant extends ChangeNotifier {
     _isProcessing = true;
     notifyListeners();
 
-    // 1. Knowledge base match (instant)
-    final kb = KnowledgeBase.match(text.trim());
-    if (kb.found) {
-      var response = kb.response;
-      if (response.contains('{') && _rideLogger != null && _connectivity != null) {
-        final ctx = AiContext(
-          rideLogger: _rideLogger!,
-          connectivity: _connectivity!,
-        );
-        response = ctx.fillTemplate(response, ctx.gather());
-      }
-      await Future.delayed(const Duration(milliseconds: 300));
-      _messages.add(ChatMessage(
-        role: MessageRole.assistant,
-        text: response,
-        timestamp: DateTime.now(),
-        source: ResponseSource.knowledgeBase,
-      ));
-      _isProcessing = false;
-      notifyListeners();
-      return;
-    }
-
-    // 2. Local LLM (if downloaded and ready)
-    if (_llmService != null && _llmService!.downloadManager.isModelDownloaded) {
-      _isStreaming = true;
-      _isProcessing = false;
-      final streamMsg = ChatMessage(
-        role: MessageRole.assistant,
-        text: '',
-        timestamp: DateTime.now(),
-        source: ResponseSource.localLlm,
-        isStreaming: true,
-      );
-      _messages.add(streamMsg);
-      notifyListeners();
-
-      final msgIndex = _messages.length - 1;
-      String fullText = '';
-
+    if (_router != null) {
       try {
-        await for (final token in _llmService!.generateResponse(text.trim())
-            .timeout(const Duration(seconds: 30))) {
-          fullText = token;
+        final result = await _router!.route(
+          text.trim(),
+          history: _recentHistory(),
+        );
+
+        if (result.isStream && _llmService != null) {
+          // Stream from local LLM
+          _isStreaming = true;
+          _isProcessing = false;
+          final streamMsg = ChatMessage(
+            role: MessageRole.assistant,
+            text: '',
+            timestamp: DateTime.now(),
+            source: ResponseSource.localLlm,
+            isStreaming: true,
+          );
+          _messages.add(streamMsg);
+          notifyListeners();
+
+          final msgIndex = _messages.length - 1;
+          String fullText = '';
+
+          try {
+            await for (final token in _llmService!
+                .generateResponse(text.trim())
+                .timeout(const Duration(seconds: 30))) {
+              fullText = token;
+              _messages[msgIndex] = ChatMessage(
+                role: MessageRole.assistant,
+                text: fullText,
+                timestamp: streamMsg.timestamp,
+                source: ResponseSource.localLlm,
+                isStreaming: true,
+              );
+              notifyListeners();
+            }
+          } catch (_) {
+            if (fullText.isEmpty) {
+              fullText = _fallbackText();
+            }
+          }
+
           _messages[msgIndex] = ChatMessage(
             role: MessageRole.assistant,
             text: fullText,
             timestamp: streamMsg.timestamp,
             source: ResponseSource.localLlm,
-            isStreaming: true,
           );
+          _isStreaming = false;
           notifyListeners();
+          return;
         }
-      } catch (e) {
-        if (fullText.isEmpty) {
-          fullText = _ruleFallback(text.trim().toLowerCase());
-          _messages[msgIndex] = ChatMessage(
-            role: MessageRole.assistant,
-            text: fullText,
-            timestamp: streamMsg.timestamp,
-            source: ResponseSource.ruleBased,
-          );
-        }
-      }
 
-      _messages[msgIndex] = ChatMessage(
-        role: MessageRole.assistant,
-        text: fullText,
-        timestamp: streamMsg.timestamp,
-        source: fullText == _ruleFallback(text.trim().toLowerCase())
-            ? ResponseSource.ruleBased
-            : ResponseSource.localLlm,
-      );
-      _isStreaming = false;
-      notifyListeners();
-      return;
+        // Non-streaming response
+        await Future.delayed(const Duration(milliseconds: 300));
+        _messages.add(ChatMessage(
+          role: MessageRole.assistant,
+          text: result.response,
+          timestamp: DateTime.now(),
+          source: result.source,
+        ));
+        _isProcessing = false;
+        notifyListeners();
+        return;
+      } catch (e) {
+        debugPrint('Router error: $e');
+      }
     }
 
-    // 3. Rule-based fallback
+    // Direct fallback if router not ready
     await Future.delayed(const Duration(milliseconds: 300));
     _messages.add(ChatMessage(
       role: MessageRole.assistant,
-      text: _ruleFallback(text.trim().toLowerCase()),
+      text: _fallbackText(),
       timestamp: DateTime.now(),
       source: ResponseSource.ruleBased,
     ));
@@ -145,12 +177,7 @@ class AiAssistant extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _ruleFallback(String query) {
-    if (query.length < 3) {
-      return 'Hmm, can you tell me more? Try asking about traffic rules, '
-          'earnings, maintenance, or say "help" for a list of topics!';
-    }
-
+  String _fallbackText() {
     return 'I don\'t have a specific answer for that yet, rider. '
         'But I\'m learning! Here\'s what I can help with:\n\n'
         '🚦 Traffic rules & regulations\n'
