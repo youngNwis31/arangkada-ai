@@ -16,6 +16,7 @@ import '../widgets/ride_toggle.dart';
 import 'search_screen.dart';
 import 'hazard_report_screen.dart';
 import 'navigation_screen.dart';
+import '../widgets/voice_fab.dart';
 
 Widget _darkTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
   return ColorFiltered(
@@ -392,6 +393,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     }),
                   ],
                 ),
+              ),
+
+              Positioned(
+                bottom: nav.hasRoute ? 340 : 110,
+                left: 16,
+                child: const VoiceFab(),
               ),
             ],
           );

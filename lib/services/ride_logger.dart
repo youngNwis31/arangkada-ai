@@ -174,6 +174,22 @@ class RideLogger extends ChangeNotifier {
     return counts;
   }
 
+  Future<void> logQuickRide({required String platform, required double earning}) async {
+    final p = RidePlatform.values.firstWhere(
+      (e) => e.name.toLowerCase() == platform.toLowerCase(),
+      orElse: () => RidePlatform.grab,
+    );
+    final ride = RideLog(
+      id: const Uuid().v4(),
+      platform: p,
+      startTime: DateTime.now(),
+      endTime: DateTime.now(),
+      estimatedEarning: earning,
+    );
+    await LocalDatabase.insertRideLog(ride.toDb());
+    await refreshLogs();
+  }
+
   Map<RidePlatform, double> get earningsByPlatform {
     final map = <RidePlatform, double>{};
     for (final ride in _weekLogs) {

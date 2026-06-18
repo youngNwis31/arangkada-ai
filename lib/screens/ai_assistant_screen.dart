@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/theme/malate_colors.dart';
 import '../config/theme/malate_typography.dart';
 import '../services/ai/ai_assistant.dart';
+import '../services/voice_command_service.dart';
 import '../widgets/neon_badge.dart';
 
 class AiAssistantScreen extends StatefulWidget {
@@ -333,6 +334,46 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       ),
       child: Row(
         children: [
+          Consumer<VoiceCommandService>(
+            builder: (_, voice, __) => GestureDetector(
+              onTap: () async {
+                if (voice.isListening) {
+                  voice.stopListening();
+                } else {
+                  await voice.startListening();
+                  voice.addListener(() {
+                    if (voice.state == VoiceCommandState.idle &&
+                        voice.transcript.isNotEmpty) {
+                      _controller.text = voice.transcript;
+                    }
+                  });
+                }
+              },
+              child: Container(
+                width: 44,
+                height: 44,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: voice.isListening
+                      ? MalateColors.neonMint.withValues(alpha: 0.15)
+                      : c.gutter,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: voice.isListening
+                        ? MalateColors.neonMint
+                        : c.sidewalk,
+                  ),
+                ),
+                child: Icon(
+                  voice.isListening ? Icons.mic : Icons.mic_none,
+                  color: voice.isListening
+                      ? MalateColors.neonMint
+                      : c.textMuted,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
           Expanded(
             child: TextField(
               controller: _controller,

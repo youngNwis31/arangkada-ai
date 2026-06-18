@@ -54,4 +54,24 @@ class VoiceService {
   static Future<void> speakHazardNearby(String hazardTagalog, int meters) async {
     await speak('Warning! $hazardTagalog reported $meters meters ahead. Ingat!');
   }
+
+  static Future<void> speakCommandConfirmation(String action) async {
+    await speak(action);
+  }
+
+  static Future<void> speakEarningsSummary(double amount, int rides) async {
+    await speak('Today you earned ${amount.toStringAsFixed(0)} pesos from $rides ${rides == 1 ? "ride" : "rides"}');
+  }
+
+  static Future<void> speakCommandError(String reason) async {
+    await speak('Sorry, $reason. Try again, rider.');
+  }
+
+  static Future<void> speakFloodWarning(String severity, int meters) async {
+    await speak('Warning! $severity reported $meters meters ahead. Find alternate route!');
+  }
+
+  static Future<void> speakWeatherAlert(String condition) async {
+    await speak('Weather alert: $condition. Ingat sa biyahe!');
+  }
 }

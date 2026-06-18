@@ -14,6 +14,7 @@ import 'services/ai/llm_service.dart';
 import 'services/ai/model_download_manager.dart';
 import 'services/ride_logger.dart';
 import 'services/theme_provider.dart';
+import 'services/voice_command_service.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -42,6 +43,9 @@ void main() async {
   final llmService = LlmService(downloadManager: downloadManager);
   final geminiService = GeminiService(connectivity: connectivity);
 
+  final voiceCommand = VoiceCommandService();
+  await voiceCommand.init();
+
   final syncEngine = SyncEngine(connectivity: connectivity);
   final battery = BatterySaver()..start();
 
@@ -57,6 +61,7 @@ void main() async {
     downloadManager: downloadManager,
     llmService: llmService,
     geminiService: geminiService,
+    voiceCommand: voiceCommand,
   ));
 }
 
@@ -68,6 +73,7 @@ class ArangkadaApp extends StatelessWidget {
   final ModelDownloadManager downloadManager;
   final LlmService llmService;
   final GeminiService geminiService;
+  final VoiceCommandService voiceCommand;
 
   const ArangkadaApp({
     super.key,
@@ -78,6 +84,7 @@ class ArangkadaApp extends StatelessWidget {
     required this.downloadManager,
     required this.llmService,
     required this.geminiService,
+    required this.voiceCommand,
   });
 
   @override
@@ -104,6 +111,18 @@ class ArangkadaApp extends StatelessWidget {
             ai.setLlmService(llmService);
             ai.setGeminiService(geminiService);
             return ai;
+          },
+        ),
+        ChangeNotifierProxyProvider3<NavigationProvider, RideLogger,
+            AiAssistant, VoiceCommandService>(
+          create: (_) => voiceCommand,
+          update: (_, nav, rideLogger, ai, voice) {
+            voice!.setDependencies(
+              nav: nav,
+              rideLogger: rideLogger,
+              aiAssistant: ai,
+            );
+            return voice;
           },
         ),
       ],

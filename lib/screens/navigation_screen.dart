@@ -9,6 +9,7 @@ import '../core/offline/tile_cache_manager.dart';
 import '../services/navigation_provider.dart';
 import '../services/offline_nav_engine.dart';
 import '../widgets/nav_instruction_card.dart';
+import '../widgets/voice_fab.dart';
 
 Widget _darkTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
   return ColorFiltered(
@@ -234,6 +235,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
                     ),
                   ],
                 ),
+              ),
+
+              Positioned(
+                bottom: 200,
+                left: 16,
+                child: const VoiceFab(),
               ),
             ],
           );
