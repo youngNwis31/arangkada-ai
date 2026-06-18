@@ -13,6 +13,7 @@ import '../services/ride_logger.dart';
 import '../services/theme_provider.dart';
 import '../widgets/malate_card.dart';
 import 'earnings_screen.dart';
+import 'fare_estimator_screen.dart';
 import 'fuel_calculator_screen.dart';
 import 'hotspot_screen.dart';
 import 'offline_maps_screen.dart';
@@ -163,6 +164,21 @@ class SettingsScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const EarningsScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          _settingsTile(
+            context,
+            icon: Icons.calculate,
+            color: MalateColors.electricAmber,
+            title: 'Fare Estimator',
+            subtitle: 'Check if a trip is worth it',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const FareEstimatorScreen()),
               );
             },
           ),

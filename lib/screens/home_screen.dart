@@ -15,6 +15,7 @@ import '../widgets/route_info_card.dart';
 import '../widgets/ride_toggle.dart';
 import 'search_screen.dart';
 import 'hazard_report_screen.dart';
+import 'fare_estimator_screen.dart';
 import 'navigation_screen.dart';
 import '../widgets/voice_fab.dart';
 
@@ -380,6 +381,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 right: 16,
                 child: Column(
                   children: [
+                    _buildFab(Icons.calculate, MalateColors.electricAmber, () {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => const FareEstimatorScreen(),
+                      ));
+                    }),
+                    const SizedBox(height: 10),
                     _buildFab(Icons.warning_amber_rounded, MalateColors.electricAmber, () {
                       Navigator.push(context, MaterialPageRoute(
                         builder: (_) => HazardReportScreen(currentLocation: nav.currentLocation),
