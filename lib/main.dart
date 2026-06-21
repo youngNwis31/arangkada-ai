@@ -12,6 +12,9 @@ import 'services/ai/ai_assistant.dart';
 import 'services/ai/gemini_service.dart';
 import 'services/ai/llm_service.dart';
 import 'services/ai/model_download_manager.dart';
+import 'services/crash_detector.dart';
+import 'services/fatigue_monitor.dart';
+import 'services/speed_monitor.dart';
 import 'services/ride_logger.dart';
 import 'services/theme_provider.dart';
 import 'services/voice_command_service.dart';
@@ -52,6 +55,10 @@ void main() async {
 
   final syncEngine = SyncEngine(connectivity: connectivity);
   final battery = BatterySaver()..start();
+  final navProvider = NavigationProvider();
+  final crashDetector = CrashDetector()..start();
+  final speedMonitor = SpeedMonitor(navProvider.navEngine);
+  final fatigueMonitor = FatigueMonitor(navProvider);
 
   if (connectivity.isOnline) {
     syncEngine.syncAll();
@@ -67,6 +74,10 @@ void main() async {
     geminiService: geminiService,
     voiceCommand: voiceCommand,
     weatherService: weatherService,
+    navProvider: navProvider,
+    crashDetector: crashDetector,
+    speedMonitor: speedMonitor,
+    fatigueMonitor: fatigueMonitor,
   ));
 }
 
@@ -80,6 +91,10 @@ class ArangkadaApp extends StatelessWidget {
   final GeminiService geminiService;
   final VoiceCommandService voiceCommand;
   final WeatherService weatherService;
+  final NavigationProvider navProvider;
+  final CrashDetector crashDetector;
+  final SpeedMonitor speedMonitor;
+  final FatigueMonitor fatigueMonitor;
 
   const ArangkadaApp({
     super.key,
@@ -92,6 +107,10 @@ class ArangkadaApp extends StatelessWidget {
     required this.geminiService,
     required this.voiceCommand,
     required this.weatherService,
+    required this.navProvider,
+    required this.crashDetector,
+    required this.speedMonitor,
+    required this.fatigueMonitor,
   });
 
   @override
@@ -106,7 +125,10 @@ class ArangkadaApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: llmService),
         Provider.value(value: geminiService),
         ChangeNotifierProvider.value(value: weatherService),
-        ChangeNotifierProvider(create: (_) => NavigationProvider()),
+        ChangeNotifierProvider.value(value: navProvider),
+        ChangeNotifierProvider.value(value: crashDetector),
+        ChangeNotifierProvider.value(value: speedMonitor),
+        ChangeNotifierProvider.value(value: fatigueMonitor),
         ChangeNotifierProvider(create: (_) => RideLogger()..init()),
         ChangeNotifierProxyProvider2<RideLogger, ConnectivityMonitor,
             AiAssistant>(

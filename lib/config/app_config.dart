@@ -2,7 +2,7 @@ class AppConfig {
   AppConfig._();
 
   static const String appName = 'Arangkada AI';
-  static const String appVersion = 'v0.05';
+  static const String appVersion = 'v0.06';
   static const String developer = 'James Earl Medrano';
   static const String appTagline = 'Your 24/7 Rider Road Assistant';
 
@@ -74,6 +74,19 @@ class AppConfig {
       'https://api.open-meteo.com/v1/forecast';
   static const int floodReportExpiryHours = 6;
   static const int weatherRefreshMinutes = 30;
+
+  // Crash Detection
+  static const int crashSamplingMs = 100;
+  static const int crashWindowSamples = 5;
+  static const double crashThresholdMs2 = 40.0; // ~4G
+  static const int crashDropWindowMs = 200;
+  static const double crashDropRatio = 0.4;
+  static const int crashCountdownSeconds = 30;
+  static const int crashCooldownSeconds = 60;
+
+  // Speed Monitor
+  static const double defaultSpeedLimitKmh = 60.0;
+  static const int speedWarningCooldownSeconds = 30;
 
   // Firebase Free Tier Guardrails
   static const int maxFirestoreWritesPerDay = 20000;

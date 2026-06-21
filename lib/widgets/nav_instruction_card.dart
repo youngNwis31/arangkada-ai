@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../config/theme/malate_colors.dart';
 import '../config/theme/malate_typography.dart';
 import '../services/offline_nav_engine.dart';
+import '../services/speed_monitor.dart';
 
 class NavInstructionCard extends StatelessWidget {
   final OfflineNavEngine engine;
@@ -129,6 +131,7 @@ class NavInstructionCard extends StatelessWidget {
 
   Widget _statsRow(BuildContext context) {
     final c = MalateColors.of(context);
+    final speed = context.watch<SpeedMonitor>();
     final remainDist = engine.totalRemainingDistance;
     final distText = remainDist >= 1000
         ? '${(remainDist / 1000).toStringAsFixed(1)} km'
@@ -143,31 +146,39 @@ class NavInstructionCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _stat(context, Icons.schedule, engine.etaText, 'ETA'),
+          _stat(context, Icons.schedule,
+              '${engine.etaText}\n${engine.etaTimeText}', 'ETA'),
           Container(width: 1, height: 24, color: c.sidewalk),
           _stat(context, Icons.straighten, distText, 'LEFT'),
           Container(width: 1, height: 24, color: c.sidewalk),
-          _stat(context, Icons.speed, '${(engine.speedMs * 3.6).toInt()} km/h',
-              'SPEED'),
+          _stat(
+            context,
+            Icons.speed,
+            '${speed.currentSpeedKmh.toInt()} km/h',
+            'SPEED',
+            valueColor: speed.isOverLimit ? MalateColors.hazardRed : null,
+          ),
         ],
       ),
     );
   }
 
   Widget _stat(
-      BuildContext context, IconData icon, String value, String label) {
+      BuildContext context, IconData icon, String value, String label,
+      {Color? valueColor}) {
     final c = MalateColors.of(context);
+    final color = valueColor ?? c.textPrimary;
     return Column(
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: MalateColors.cyberCyan, size: 14),
+            Icon(icon, color: valueColor ?? MalateColors.cyberCyan, size: 14),
             const SizedBox(width: 4),
             Text(
               value,
               style: MalateTypography.headlineSmall
-                  .copyWith(fontSize: 15, color: c.textPrimary),
+                  .copyWith(fontSize: 15, color: color),
             ),
           ],
         ),

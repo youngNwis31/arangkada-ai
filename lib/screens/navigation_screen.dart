@@ -8,7 +8,10 @@ import '../config/theme/malate_typography.dart';
 import '../core/offline/tile_cache_manager.dart';
 import '../services/navigation_provider.dart';
 import '../services/offline_nav_engine.dart';
+import '../services/fatigue_monitor.dart';
+import '../services/speed_monitor.dart';
 import '../widgets/nav_instruction_card.dart';
+import '../widgets/crash_alert_overlay.dart';
 import '../widgets/voice_fab.dart';
 import '../widgets/flood_marker.dart';
 import '../services/hazard_service.dart';
@@ -275,10 +278,93 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 child: const VoiceFab(),
               ),
 
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 60,
+                left: 16,
+                child: Consumer<SpeedMonitor>(
+                  builder: (_, speed, __) {
+                    final kmh = speed.currentSpeedKmh.toInt();
+                    final over = speed.isOverLimit;
+                    final color = over
+                        ? MalateColors.hazardRed
+                        : MalateColors.neonMint;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: c.asphalt.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                            color: color.withValues(alpha: 0.6)),
+                        boxShadow: over
+                            ? MalateColors.neonGlow(
+                                MalateColors.hazardRed,
+                                intensity: 0.4)
+                            : null,
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            '$kmh',
+                            style: MalateTypography.headlineLarge.copyWith(
+                              color: color,
+                              fontSize: 28,
+                            ),
+                          ),
+                          Text(
+                            'km/h',
+                            style: MalateTypography.labelSmall
+                                .copyWith(color: color),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              Consumer<FatigueMonitor>(
+                builder: (_, fatigue, __) {
+                  if (!fatigue.shouldRest) return const SizedBox.shrink();
+                  final color = fatigue.mustRest
+                      ? MalateColors.hazardRed
+                      : MalateColors.electricAmber;
+                  return Positioned(
+                    top: MediaQuery.of(context).padding.top + 140,
+                    left: 16,
+                    child: GestureDetector(
+                      onTap: fatigue.markRest,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: c.asphalt.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: color.withValues(alpha: 0.6)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.timer, color: color, size: 16),
+                            const SizedBox(width: 6),
+                            Text(
+                              fatigue.rideTimeText,
+                              style: MalateTypography.labelLarge
+                                  .copyWith(color: color),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+
               if (_showFloodBanner)
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 60,
-                  left: 16,
+                  left: 90,
                   right: 80,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -313,6 +399,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
                     ),
                   ),
                 ),
+              const Positioned.fill(
+                child: CrashAlertOverlay(),
+              ),
             ],
           );
         },

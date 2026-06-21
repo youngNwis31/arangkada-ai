@@ -10,6 +10,7 @@ import '../services/ai/llm_service.dart';
 import '../services/ai/model_download_manager.dart';
 import '../services/ai/gemini_service.dart';
 import '../services/ride_logger.dart';
+import '../services/speed_monitor.dart';
 import '../services/theme_provider.dart';
 import '../widgets/malate_card.dart';
 import 'earnings_screen.dart';
@@ -222,6 +223,87 @@ class SettingsScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const SafetyScreen()),
+              );
+            },
+          ),
+
+          const SizedBox(height: 32),
+
+          // ── Safety Settings ──
+          _sectionHeader(context, 'SAFETY'),
+          const SizedBox(height: 12),
+          Consumer<SpeedMonitor>(
+            builder: (_, speed, __) {
+              final c = MalateColors.of(context);
+              return MalateCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.speed,
+                            color: MalateColors.hazardRed, size: 20),
+                        const SizedBox(width: 12),
+                        Text('Speed Limit',
+                            style: MalateTypography.bodyMedium),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color:
+                                MalateColors.hazardRed.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: MalateColors.hazardRed
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            '${speed.speedLimitKmh.toInt()} km/h',
+                            style: MalateTypography.headlineSmall.copyWith(
+                              fontSize: 14,
+                              color: MalateColors.hazardRed,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SliderTheme(
+                      data: SliderThemeData(
+                        activeTrackColor: MalateColors.hazardRed,
+                        inactiveTrackColor: c.sidewalk,
+                        thumbColor: MalateColors.hazardRed,
+                        overlayColor:
+                            MalateColors.hazardRed.withValues(alpha: 0.15),
+                      ),
+                      child: Slider(
+                        value: speed.speedLimitKmh,
+                        min: 30,
+                        max: 120,
+                        divisions: 18,
+                        onChanged: (v) => speed.setSpeedLimit(v),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('30 km/h',
+                            style: MalateTypography.labelSmall
+                                .copyWith(color: c.textMuted)),
+                        Text('120 km/h',
+                            style: MalateTypography.labelSmall
+                                .copyWith(color: c.textMuted)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Voice warning when you exceed this speed',
+                      style: MalateTypography.bodySmall
+                          .copyWith(color: c.textMuted),
+                    ),
+                  ],
+                ),
               );
             },
           ),

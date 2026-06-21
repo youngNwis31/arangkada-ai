@@ -7,6 +7,7 @@ import '../config/theme/malate_colors.dart';
 import '../config/theme/malate_typography.dart';
 import '../widgets/malate_card.dart';
 import '../services/ride_logger.dart';
+import '../services/fatigue_monitor.dart';
 import '../core/database/local_database.dart';
 
 class SafetyScreen extends StatefulWidget {
@@ -728,6 +729,71 @@ class _SafetyScreenState extends State<SafetyScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          Consumer<FatigueMonitor>(
+            builder: (_, fatigue, __) {
+              final fatigueColor = fatigue.mustRest
+                  ? MalateColors.hazardRed
+                  : fatigue.shouldRest
+                      ? MalateColors.electricAmber
+                      : MalateColors.neonMint;
+              return Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: fatigueColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: fatigueColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.timer, color: fatigueColor, size: 18),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Continuous ride',
+                              style: MalateTypography.labelSmall
+                                  .copyWith(color: c.textMuted),
+                            ),
+                            Text(
+                              fatigue.rideTimeText,
+                              style: MalateTypography.headlineSmall
+                                  .copyWith(color: fatigueColor),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        if (fatigue.shouldRest)
+                          GestureDetector(
+                            onTap: fatigue.markRest,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: fatigueColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'TAKE A BREAK',
+                                style: MalateTypography.labelSmall.copyWith(
+                                  color: c.midnight,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

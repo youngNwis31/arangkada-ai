@@ -56,12 +56,32 @@ class OfflineNavEngine extends ChangeNotifier {
     return instr;
   }
 
+  double get dynamicEtaSeconds {
+    if (_speedMs > AppConfig.navLowSpeedThreshold &&
+        _totalRemainingDistance > 0) {
+      return _totalRemainingDistance / _speedMs;
+    }
+    return _totalRemainingDuration;
+  }
+
+  DateTime get etaDateTime =>
+      DateTime.now().add(Duration(seconds: dynamicEtaSeconds.ceil()));
+
   String get etaText {
-    final minutes = (_totalRemainingDuration / 60).ceil();
+    final minutes = (dynamicEtaSeconds / 60).ceil();
     if (minutes >= 60) {
       return '${minutes ~/ 60}h ${minutes % 60}m';
     }
     return '$minutes min';
+  }
+
+  String get etaTimeText {
+    final arrival = etaDateTime;
+    final h = arrival.hour;
+    final m = arrival.minute;
+    final period = h >= 12 ? 'PM' : 'AM';
+    final hour12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+    return '$hour12:${m.toString().padLeft(2, '0')} $period';
   }
 
   String get distanceToNextText {
