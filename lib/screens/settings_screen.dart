@@ -10,6 +10,7 @@ import '../services/ai/llm_service.dart';
 import '../services/ai/model_download_manager.dart';
 import '../services/ai/gemini_service.dart';
 import '../services/ride_logger.dart';
+import '../services/night_mode_provider.dart';
 import '../services/speed_monitor.dart';
 import '../services/theme_provider.dart';
 import '../widgets/malate_card.dart';
@@ -77,6 +78,46 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+
+          const SizedBox(height: 16),
+          Consumer<NightModeProvider>(
+            builder: (_, nightMode, __) {
+              final c = MalateColors.of(context);
+              return MalateCard(
+                child: Row(
+                  children: [
+                    Icon(
+                      nightMode.isNightMode
+                          ? Icons.nightlight_round
+                          : Icons.wb_sunny,
+                      color: MalateColors.electricAmber,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Night Mode',
+                              style: MalateTypography.bodyMedium),
+                          Text(
+                            'Red-tinted map for night riding',
+                            style: MalateTypography.bodySmall
+                                .copyWith(color: c.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: nightMode.isNightMode,
+                      onChanged: (_) => nightMode.toggle(),
+                      activeColor: MalateColors.electricAmber,
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
 
           const SizedBox(height: 32),

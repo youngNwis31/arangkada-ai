@@ -27,6 +27,48 @@ class VoiceService {
     await speak(instruction);
   }
 
+  static String _tagalizeModifier(String? modifier) {
+    return switch (modifier) {
+      'left' || 'sharp left' || 'slight left' => 'kumaliwa',
+      'right' || 'sharp right' || 'slight right' => 'kumanan',
+      'uturn' => 'mag-U-turn',
+      'straight' => 'diretso',
+      _ => 'diretso',
+    };
+  }
+
+  static String _extractStreetName(String instruction) {
+    for (final prefix in [' onto ', ' on ', ' into ']) {
+      final idx = instruction.indexOf(prefix);
+      if (idx != -1) return instruction.substring(idx + prefix.length);
+    }
+    return '';
+  }
+
+  static Future<void> speakNavStep(
+      String? modifier, String? maneuverType, String instruction, int meters) async {
+    if (maneuverType == 'arrive') {
+      await speak('Malapit ka na. Destination ahead.');
+      return;
+    }
+    if (maneuverType == 'depart') {
+      await speak('Tara, diretso lang.');
+      return;
+    }
+
+    final verb = _tagalizeModifier(modifier);
+    final street = _extractStreetName(instruction);
+    final distText = meters >= 1000
+        ? '${(meters / 1000).toStringAsFixed(1)} kilometers'
+        : '$meters meters';
+
+    if (street.isNotEmpty) {
+      await speak('In $distText, $verb sa $street');
+    } else {
+      await speak('In $distText, $verb');
+    }
+  }
+
   static Future<void> speakHazardAlert(String hazardType) async {
     await speak('Warning! $hazardType reported ahead. Ingat, rider!');
   }

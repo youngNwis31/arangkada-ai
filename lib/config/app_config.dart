@@ -88,6 +88,19 @@ class AppConfig {
   static const double defaultSpeedLimitKmh = 60.0;
   static const int speedWarningCooldownSeconds = 30;
 
+  // Speed-Aware Voice Announcement Tiers (meters before turn)
+  static const double voiceTierHighwayKmh = 60.0;
+  static const double voiceTierHighwayMeters = 800.0;
+  static const double voiceTierNormalKmh = 40.0;
+  static const double voiceTierNormalMeters = 500.0;
+  static const double voiceTierSlowKmh = 15.0;
+  static const double voiceTierSlowMeters = 200.0;
+  static const double voiceTierCrawlMeters = 100.0;
+
+  // Night Mode
+  static const int nightStartHour = 18;
+  static const int nightEndHour = 5;
+
   // Firebase Free Tier Guardrails
   static const int maxFirestoreWritesPerDay = 20000;
   static const int maxFirestoreReadsPerDay = 50000;

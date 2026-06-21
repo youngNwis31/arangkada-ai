@@ -9,6 +9,7 @@ import '../core/offline/tile_cache_manager.dart';
 import '../services/navigation_provider.dart';
 import '../services/offline_nav_engine.dart';
 import '../services/fatigue_monitor.dart';
+import '../services/night_mode_provider.dart';
 import '../services/speed_monitor.dart';
 import '../widgets/nav_instruction_card.dart';
 import '../widgets/crash_alert_overlay.dart';
@@ -23,6 +24,18 @@ Widget _darkTileBuilder(BuildContext context, Widget tileWidget, TileImage tile)
       -0.6, 0, 0, 0, 130,
       0, -0.6, 0, 0, 130,
       0, 0, -0.6, 0, 130,
+      0, 0, 0, 1, 0,
+    ]),
+    child: tileWidget,
+  );
+}
+
+Widget _nightTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
+  return ColorFiltered(
+    colorFilter: const ColorFilter.matrix(<double>[
+      0.4, 0, 0, 0, 30,
+      0, 0.15, 0, 0, 0,
+      0, 0, 0.15, 0, 0,
       0, 0, 0, 1, 0,
     ]),
     child: tileWidget,
@@ -139,6 +152,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   Widget build(BuildContext context) {
     final c = MalateColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isNight = context.watch<NightModeProvider>().isNightMode;
 
     return Scaffold(
       backgroundColor: c.midnight,
@@ -171,7 +185,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
                     maxZoom: 19,
                     retinaMode: true,
                     tileProvider: context.read<TileCacheManager>().tileProvider,
-                    tileBuilder: isDark ? _darkTileBuilder : null,
+                    tileBuilder: isNight
+                        ? _nightTileBuilder
+                        : (isDark ? _darkTileBuilder : null),
                   ),
                   PolylineLayer(polylines: _buildRoutePolyline(nav)),
                   if (_floodReports.isNotEmpty)
@@ -261,6 +277,14 @@ class _NavigationScreenState extends State<NavigationScreen> {
                       Icons.zoom_out_map,
                       MalateColors.cyberCyan,
                       () => _fitRoute(nav),
+                    ),
+                    const SizedBox(height: 10),
+                    _controlButton(
+                      isNight ? Icons.nightlight_round : Icons.wb_sunny,
+                      isNight
+                          ? MalateColors.electricAmber
+                          : MalateColors.cyberCyan,
+                      () => context.read<NightModeProvider>().toggle(),
                     ),
                     const SizedBox(height: 10),
                     _controlButton(

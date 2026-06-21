@@ -14,6 +14,7 @@ import 'services/ai/llm_service.dart';
 import 'services/ai/model_download_manager.dart';
 import 'services/crash_detector.dart';
 import 'services/fatigue_monitor.dart';
+import 'services/night_mode_provider.dart';
 import 'services/speed_monitor.dart';
 import 'services/ride_logger.dart';
 import 'services/theme_provider.dart';
@@ -59,6 +60,7 @@ void main() async {
   final crashDetector = CrashDetector()..start();
   final speedMonitor = SpeedMonitor(navProvider.navEngine);
   final fatigueMonitor = FatigueMonitor(navProvider);
+  final nightMode = NightModeProvider();
 
   if (connectivity.isOnline) {
     syncEngine.syncAll();
@@ -78,6 +80,7 @@ void main() async {
     crashDetector: crashDetector,
     speedMonitor: speedMonitor,
     fatigueMonitor: fatigueMonitor,
+    nightMode: nightMode,
   ));
 }
 
@@ -95,6 +98,7 @@ class ArangkadaApp extends StatelessWidget {
   final CrashDetector crashDetector;
   final SpeedMonitor speedMonitor;
   final FatigueMonitor fatigueMonitor;
+  final NightModeProvider nightMode;
 
   const ArangkadaApp({
     super.key,
@@ -111,6 +115,7 @@ class ArangkadaApp extends StatelessWidget {
     required this.crashDetector,
     required this.speedMonitor,
     required this.fatigueMonitor,
+    required this.nightMode,
   });
 
   @override
@@ -129,6 +134,7 @@ class ArangkadaApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: crashDetector),
         ChangeNotifierProvider.value(value: speedMonitor),
         ChangeNotifierProvider.value(value: fatigueMonitor),
+        ChangeNotifierProvider.value(value: nightMode),
         ChangeNotifierProvider(create: (_) => RideLogger()..init()),
         ChangeNotifierProxyProvider2<RideLogger, ConnectivityMonitor,
             AiAssistant>(

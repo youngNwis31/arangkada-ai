@@ -207,25 +207,38 @@ class OfflineNavEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  double get _dynamicAnnounceDistance {
+    final kmh = _speedMs * 3.6;
+    if (kmh > AppConfig.voiceTierHighwayKmh) return AppConfig.voiceTierHighwayMeters;
+    if (kmh > AppConfig.voiceTierNormalKmh) return AppConfig.voiceTierNormalMeters;
+    if (kmh > AppConfig.voiceTierSlowKmh) return AppConfig.voiceTierSlowMeters;
+    return AppConfig.voiceTierCrawlMeters;
+  }
+
   void _announceDistance() {
     if (!_voiceEnabled || _speedMs < AppConfig.navLowSpeedThreshold) return;
 
     final step = currentStep;
     if (step == null) return;
 
-    final key500 = '${_currentStepIndex}_500';
-    final key200 = '${_currentStepIndex}_200';
+    final farDist = _dynamicAnnounceDistance;
+    final nearDist = (farDist * 0.4).clamp(40.0, 200.0);
 
-    if (_distanceToNextStep <= AppConfig.navVoiceAnnounce500m &&
-        _distanceToNextStep > AppConfig.navVoiceAnnounce200m &&
-        !_announcedDistances.contains(key500)) {
-      _announcedDistances.add(key500);
-      VoiceService.speakNavDistance(step.instruction, 500);
-    } else if (_distanceToNextStep <= AppConfig.navVoiceAnnounce200m &&
+    final keyFar = '${_currentStepIndex}_far';
+    final keyNear = '${_currentStepIndex}_near';
+
+    if (_distanceToNextStep <= farDist &&
+        _distanceToNextStep > nearDist &&
+        !_announcedDistances.contains(keyFar)) {
+      _announcedDistances.add(keyFar);
+      VoiceService.speakNavStep(
+          step.modifier, step.maneuverType, step.instruction, farDist.toInt());
+    } else if (_distanceToNextStep <= nearDist &&
         _distanceToNextStep > AppConfig.navVoiceAnnounceNow &&
-        !_announcedDistances.contains(key200)) {
-      _announcedDistances.add(key200);
-      VoiceService.speakNavDistance(step.instruction, 200);
+        !_announcedDistances.contains(keyNear)) {
+      _announcedDistances.add(keyNear);
+      VoiceService.speakNavStep(
+          step.modifier, step.maneuverType, step.instruction, nearDist.toInt());
     }
   }
 
