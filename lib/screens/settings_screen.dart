@@ -12,6 +12,7 @@ import '../services/ai/gemini_service.dart';
 import '../services/ride_logger.dart';
 import '../services/night_mode_provider.dart';
 import '../services/speed_monitor.dart';
+import '../services/voice_command_service.dart';
 import '../services/theme_provider.dart';
 import '../widgets/malate_card.dart';
 import 'earnings_screen.dart';
@@ -343,6 +344,116 @@ class SettingsScreen extends StatelessWidget {
                       style: MalateTypography.bodySmall
                           .copyWith(color: c.textMuted),
                     ),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 32),
+
+          // ── Hands-Free ──
+          _sectionHeader(context, 'HANDS-FREE'),
+          const SizedBox(height: 12),
+          Consumer<VoiceCommandService>(
+            builder: (_, voice, __) {
+              final c = MalateColors.of(context);
+              return MalateCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.hearing,
+                            color: MalateColors.cyberCyan, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Auto-Listen',
+                                  style: MalateTypography.bodyMedium),
+                              Text(
+                                'Mic activates every 45s during navigation',
+                                style: MalateTypography.bodySmall
+                                    .copyWith(color: c.textMuted),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: voice.autoListenEnabled,
+                          onChanged: (_) => voice.toggleAutoListen(),
+                          activeColor: MalateColors.cyberCyan,
+                        ),
+                      ],
+                    ),
+                    if (voice.autoListenEnabled) ...[
+                      const SizedBox(height: 16),
+                      Divider(color: c.sidewalk),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Icon(Icons.update,
+                              color: MalateColors.electricAmber, size: 20),
+                          const SizedBox(width: 12),
+                          Text('Status Update',
+                              style: MalateTypography.bodyMedium),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: MalateColors.electricAmber
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Every ${voice.statusIntervalMinutes} min',
+                              style: MalateTypography.headlineSmall.copyWith(
+                                fontSize: 12,
+                                color: MalateColors.electricAmber,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [15, 30, 60].map((mins) {
+                          final selected =
+                              voice.statusIntervalMinutes == mins;
+                          return GestureDetector(
+                            onTap: () => voice.setStatusInterval(mins),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? MalateColors.electricAmber
+                                        .withValues(alpha: 0.15)
+                                    : c.gutter,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: selected
+                                      ? MalateColors.electricAmber
+                                      : c.sidewalk,
+                                ),
+                              ),
+                              child: Text(
+                                '${mins}m',
+                                style: MalateTypography.labelMedium.copyWith(
+                                  color: selected
+                                      ? MalateColors.electricAmber
+                                      : c.textSecondary,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
                   ],
                 ),
               );

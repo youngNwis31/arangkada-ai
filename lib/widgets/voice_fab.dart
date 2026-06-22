@@ -38,9 +38,10 @@ class _VoiceFabState extends State<VoiceFab> with SingleTickerProviderStateMixin
     final c = MalateColors.of(context);
     final voice = context.watch<VoiceCommandService>();
 
-    if (voice.isListening && !_pulseController.isAnimating) {
+    final shouldPulse = voice.isListening || voice.isAutoListenWindow;
+    if (shouldPulse && !_pulseController.isAnimating) {
       _pulseController.repeat(reverse: true);
-    } else if (!voice.isListening && _pulseController.isAnimating) {
+    } else if (!shouldPulse && _pulseController.isAnimating) {
       _pulseController.stop();
       _pulseController.reset();
     }
@@ -60,39 +61,66 @@ class _VoiceFabState extends State<VoiceFab> with SingleTickerProviderStateMixin
 
         const SizedBox(height: 8),
 
-        ScaleTransition(
-          scale: _pulseAnimation,
-          child: GestureDetector(
-            onTap: () {
-              if (voice.isListening) {
-                voice.stopListening();
-              } else {
-                voice.startListening();
-              }
-            },
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: c.asphalt,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _borderColor(voice.state),
-                  width: voice.isListening ? 2 : 1,
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            ScaleTransition(
+              scale: _pulseAnimation,
+              child: GestureDetector(
+                onTap: () {
+                  if (voice.isListening) {
+                    voice.stopListening();
+                  } else {
+                    voice.startListening();
+                  }
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: c.asphalt,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _borderColor(voice.state),
+                      width: voice.isListening ? 2 : 1,
+                    ),
+                    boxShadow: voice.isListening
+                        ? [
+                            BoxShadow(
+                              color:
+                                  MalateColors.neonMint.withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: _icon(voice.state, c),
                 ),
-                boxShadow: voice.isListening
-                    ? [
-                        BoxShadow(
-                          color: MalateColors.neonMint.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
-                      ]
-                    : null,
               ),
-              child: _icon(voice.state, c),
             ),
-          ),
+            if (voice.autoListenEnabled)
+              Positioned(
+                top: -4,
+                right: -4,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: MalateColors.electricAmber,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'AUTO',
+                    style: MalateTypography.labelSmall.copyWith(
+                      fontSize: 8,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );

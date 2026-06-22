@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
+import '../core/database/local_database.dart';
 import '../services/ai/ai_assistant.dart';
 import '../services/ai/voice_service.dart';
 import '../services/crash_detector.dart';
@@ -22,6 +24,12 @@ class VoiceCommandService extends ChangeNotifier {
   String _resultMessage = '';
   bool _isAvailable = false;
 
+  bool _autoListenEnabled = false;
+  Timer? _autoListenTimer;
+  Timer? _statusTimer;
+  int _statusIntervalMinutes = 15;
+  bool _isAutoListenWindow = false;
+
   NavigationProvider? _nav;
   RideLogger? _rideLogger;
   AiAssistant? _aiAssistant;
@@ -35,6 +43,9 @@ class VoiceCommandService extends ChangeNotifier {
   String get resultMessage => _resultMessage;
   bool get isAvailable => _isAvailable;
   bool get isListening => _state == VoiceCommandState.listening;
+  bool get autoListenEnabled => _autoListenEnabled;
+  bool get isAutoListenWindow => _isAutoListenWindow;
+  int get statusIntervalMinutes => _statusIntervalMinutes;
 
   Future<void> init() async {
     _isAvailable = await _speech.initialize(
@@ -60,6 +71,7 @@ class VoiceCommandService extends ChangeNotifier {
         }
       },
     );
+    await loadAutoListenSettings();
     notifyListeners();
   }
 
@@ -515,9 +527,115 @@ class VoiceCommandService extends ChangeNotifier {
     VoiceService.speak('Let me think about that...');
   }
 
+  Future<void> toggleAutoListen() async {
+    _autoListenEnabled = !_autoListenEnabled;
+    await LocalDatabase.setRiderSetting(
+        'auto_listen_enabled', _autoListenEnabled.toString());
+    if (_autoListenEnabled) {
+      _startAutoListen();
+    } else {
+      _stopAutoListen();
+    }
+    notifyListeners();
+    debugPrint('AutoListen: ${_autoListenEnabled ? "ON" : "OFF"}');
+  }
+
+  void setAutoListen(bool value) {
+    if (_autoListenEnabled == value) return;
+    _autoListenEnabled = value;
+    LocalDatabase.setRiderSetting(
+        'auto_listen_enabled', _autoListenEnabled.toString());
+    if (value) {
+      _startAutoListen();
+    } else {
+      _stopAutoListen();
+    }
+    notifyListeners();
+  }
+
+  Future<void> setStatusInterval(int minutes) async {
+    _statusIntervalMinutes = minutes;
+    await LocalDatabase.setRiderSetting(
+        'status_update_interval_minutes', minutes.toString());
+    if (_autoListenEnabled) {
+      _restartStatusTimer();
+    }
+    notifyListeners();
+  }
+
+  Future<void> loadAutoListenSettings() async {
+    final enabled =
+        await LocalDatabase.getRiderSetting('auto_listen_enabled');
+    if (enabled == 'true') {
+      _autoListenEnabled = true;
+    }
+    final interval =
+        await LocalDatabase.getRiderSetting('status_update_interval_minutes');
+    if (interval != null) {
+      _statusIntervalMinutes = int.tryParse(interval) ?? 15;
+    }
+  }
+
+  void _startAutoListen() {
+    _autoListenTimer?.cancel();
+    _autoListenTimer =
+        Timer.periodic(const Duration(seconds: 45), (_) => _autoListenTick());
+    _restartStatusTimer();
+  }
+
+  void _stopAutoListen() {
+    _autoListenTimer?.cancel();
+    _autoListenTimer = null;
+    _statusTimer?.cancel();
+    _statusTimer = null;
+    _isAutoListenWindow = false;
+    notifyListeners();
+  }
+
+  void _restartStatusTimer() {
+    _statusTimer?.cancel();
+    _statusTimer = Timer.periodic(
+        Duration(minutes: _statusIntervalMinutes), (_) => _speakStatus());
+  }
+
+  void _autoListenTick() {
+    if (_nav?.isNavigating != true) return;
+    if (_state != VoiceCommandState.idle) return;
+
+    _isAutoListenWindow = true;
+    notifyListeners();
+    startListening();
+
+    Future.delayed(const Duration(seconds: 5), () {
+      if (_state == VoiceCommandState.listening && _transcript.isEmpty) {
+        _speech.stop();
+        _state = VoiceCommandState.idle;
+        _isAutoListenWindow = false;
+        notifyListeners();
+      } else {
+        _isAutoListenWindow = false;
+        notifyListeners();
+      }
+    });
+  }
+
+  void _speakStatus() {
+    if (_nav?.isNavigating != true) return;
+
+    final engine = _nav!.navEngine;
+    final etaMin = (engine.dynamicEtaSeconds / 60).ceil();
+    final distKm = (engine.totalRemainingDistance / 1000).toStringAsFixed(1);
+    final arrival = engine.etaTimeText;
+
+    VoiceService.speak(
+        '$etaMin minutes na, $distKm km pa. Arrival $arrival.');
+  }
+
   @override
   void dispose() {
     _speech.cancel();
+    _autoListenTimer?.cancel();
+    _statusTimer?.cancel();
     super.dispose();
   }
 }
