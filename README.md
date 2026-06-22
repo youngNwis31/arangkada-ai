@@ -4,7 +4,7 @@
 
 A Flutter-based navigation and AI assistant app built for Filipino motorcycle riders on platforms like Grab, FoodPanda, Angkas, JoyRide, MoveIt, and Lalamove. Designed **offline-first** — maps, search, and AI all work without internet.
 
-**Current Version: v0.05** | 63 Dart files | ~14,500 lines of code | ₱0 budget
+**Current Version: v0.06** | 69 Dart files | ~16,250 lines of code | ₱0 budget
 
 ## Features
 
@@ -22,13 +22,57 @@ A Flutter-based navigation and AI assistant app built for Filipino motorcycle ri
 - **Context-Aware** — AI uses your ride data (earnings, platforms, ride count) to personalize answers
 - **Streaming Responses** — Token-by-token display for LLM responses
 
-### Voice Commands (Hands-Free)
+### Crash Detection & Speed Monitor (NEW in v0.06)
+- **Accelerometer Crash Detection** — Detects >4G impact spike via `sensors_plus`, triggers 30-second SOS countdown
+- **Crash Alert Overlay** — Full-screen pulsing red countdown with "I'M OK" dismiss button
+- **SOS Action** — Reads emergency contacts, builds SOS message with GPS coordinates, copies to clipboard
+- **Speed Monitor** — Real-time speed display on navigation screen, color-coded (green/amber/red)
+- **Speed Limit Warning** — Configurable limit (30-120 km/h), Taglish voice alert when exceeded
+
+### Fatigue Tracker & Dynamic ETA (NEW in v0.06)
+- **Continuous Ride Timer** — Tracks hours of non-stop riding during active navigation
+- **Taglish Rest Alerts** — "Rider, 2 hours ka na sa daan. Mag-pahinga ka muna." at 2/3/4 hour marks
+- **Dynamic ETA** — Real-time arrival time based on actual speed, not just route estimate
+- **Arrival Time Display** — Shows both duration ("12 min") and clock time ("3:45 PM")
+
+### Night Mode (NEW in v0.06)
+- **Red-Tinted Map** — Custom color matrix filter for night riding visibility, reduces eye strain
+- **Toggle Anywhere** — Moon/sun button on navigation screen + switch in Settings
+- **Auto-Suggest** — Prompts "Gabi na. Enable night mode?" between 6PM-5AM
+
+### Voice Commands (Hands-Free) — Expanded in v0.06
 - **Speech-to-Text** — Tap mic and speak, works in English and Filipino
 - **Navigation** — "Navigate to SM North EDSA" / "Papunta sa Makati"
 - **Ride Logging** — "Log ride Grab 150" creates a ride log instantly
 - **Hazard Reports** — "Report pothole" / "Baha" submits at current location
 - **Earnings Query** — "Earnings today" speaks back your total
 - **AI Passthrough** — Unmatched commands go to AI assistant
+- **Reroute** — "Reroute" / "Ibang daan" — fetches alternative route (NEW)
+- **Speed Check** — "Speed ko?" / "Bilis ko" — speaks current speed (NEW)
+- **ETA Query** — "Gaano kalayo pa?" / "ETA" — speaks distance + arrival time (NEW)
+- **Night Mode** — "Night mode" / "Gabi mode" — toggles night riding mode (NEW)
+- **Rest** — "Pahinga" / "Rest" — resets fatigue timer (NEW)
+- **Dismiss Crash** — "I'm ok" / "Ok lang" — dismisses crash alert (NEW)
+- **SOS** — "Help" / "Tulong" / "SOS" — triggers emergency SOS (NEW)
+- **Status** — "Status" / "Sitrep" — speaks full ride summary (NEW)
+
+### Taglish Voice Guidance (NEW in v0.06)
+- **Natural Filipino Turns** — "In 200 meters, kumaliwa sa Taft Avenue" instead of raw OSRM text
+- **Speed-Aware Timing** — Highway (>60 km/h): 800m, Normal (>40): 500m, Slow (>15): 200m, Crawl: 100m
+- **Street Name Extraction** — Parses road names from OSRM instructions for natural speech
+
+### Route Hazard Monitor (NEW in v0.06)
+- **Active Route Scanning** — Queries hazards every 30s along remaining route during navigation
+- **Taglish Alerts** — "May road closure ahead!" with severity classification
+- **Reroute Offer** — Severe hazards (closure, flood, accident) prompt "Gusto mo mag-reroute?"
+- **Alert Banner** — Red (severe) or amber (warning) banner on navigation screen with REROUTE button
+
+### Auto-Listen Mode (NEW in v0.06)
+- **Periodic Mic Activation** — Every 45 seconds during navigation, mic opens for 5 seconds
+- **Hands-Free Riding** — Speak commands without touching the phone
+- **Periodic Status Updates** — Automatic Taglish summary every 15/30/60 minutes: "X minutes na, Y km pa. Arrival Z."
+- **AUTO Badge** — Voice FAB shows amber "AUTO" badge when enabled
+- **Configurable** — Toggle + interval selector in Settings > HANDS-FREE
 
 ### Fare Estimator (Trip Worth Calculator)
 - **Route-Based Calculation** — Uses OSRM routing for accurate distance and duration
@@ -54,7 +98,7 @@ A Flutter-based navigation and AI assistant app built for Filipino motorcycle ri
 - **Booking Hotspots** — See where you get the most bookings
 - **Rider Safety** — SOS, emergency contacts, rest reminders
 - **Battery Saver** — Adaptive GPS intervals based on motion detection
-- **Light/Dark Theme** — Toggle between Malate Street Style dark mode and clean light mode
+- **Light/Dark/Night Theme** — Toggle between Malate Street Style dark mode, clean light mode, and red-tinted night mode
 
 ## AI Architecture
 
@@ -93,6 +137,7 @@ Each response shows a source badge: book (KB), cloud (Gemini), brain (LLM), gear
 | State | Provider (ChangeNotifier) | Free |
 | Voice Output | flutter_tts (en-PH locale) | Free |
 | Voice Input | speech_to_text v7 (offline capable) | Free |
+| Sensors | sensors_plus (accelerometer for crash detection) | Free |
 | Weather | Open-Meteo API (no key, no limits) | Free |
 | Charts | fl_chart | Free |
 | Tile Cache | flutter_map_tile_caching | Free |
@@ -157,7 +202,13 @@ lib/
       llm_service      # On-device model wrapper
       model_download_manager # WiFi-only download with resume
       gemini_service   # Gemini Flash REST API wrapper
-    voice_command_service # Speech-to-text + command parser
+      voice_service    # TTS wrapper with Taglish nav speech
+    crash_detector     # Accelerometer crash detection + SOS countdown
+    speed_monitor      # Real-time speed tracking + limit warnings
+    fatigue_monitor    # Continuous ride timer + rest alerts
+    night_mode_provider # Night riding red-tint mode
+    route_hazard_monitor # Active route hazard scanning + reroute
+    voice_command_service # Speech-to-text + 14 command matchers + auto-listen
     weather_service    # Open-Meteo API wrapper with caching
     fare_calculator    # Trip cost vs fare analysis
     ride_logger        # Earnings per platform
@@ -168,12 +219,13 @@ lib/
     hazard_service     # Community hazard + flood reports
     theme_provider     # Light/dark/system toggle
   utils/               # Route optimizer
-  widgets/             # Reusable components (9 widgets)
-    voice_fab          # Animated mic button with pulse
+  widgets/             # Reusable components (10 widgets)
+    voice_fab          # Animated mic button with pulse + AUTO badge
+    crash_alert_overlay # Full-screen SOS countdown overlay
     weather_widget     # Compact weather card
     flood_marker       # Severity-colored map marker
     ...                # route_info_card, nav_instruction_card, etc.
-  main.dart            # Entry point with MultiProvider (12 providers)
+  main.dart            # Entry point with MultiProvider (17 providers)
 ```
 
 ---
@@ -350,6 +402,37 @@ Full build history from initial commit to current version. Every commit, every f
 - Database bumped to v5 with `weather_cache` table
 - Registered WeatherService in MultiProvider
 
+### Day 8 — June 23, 2026: Outdoor Riding Safety & Smart Navigation (v0.06)
+
+5-phase implementation adding crash detection, speed monitoring, fatigue tracking, night mode, Taglish voice guidance, route hazard monitoring, expanded voice commands, and hands-free auto-listen mode.
+
+**`3d92cac` — feat: add crash detection, speed monitor, fatigue tracker, and dynamic ETA (v0.06 Phase 1-2)**
+- Created CrashDetector — accelerometer-based crash detection with 4G threshold, 30s countdown, SOS action
+- Created SpeedMonitor — real-time speed tracking with configurable limit and voice warnings
+- Created CrashAlertOverlay — full-screen pulsing red countdown with "I'M OK" button
+- Created FatigueMonitor — continuous ride timer with Taglish alerts at 2/3/4 hours
+- Added dynamic ETA to OfflineNavEngine — arrival time based on actual speed
+- Added speed badge + fatigue badge to NavigationScreen
+- Added speed limit slider (30-120 km/h) to Settings > SAFETY section
+
+**`0ef8ff1` — feat: add night mode, Taglish voice guidance, and speed-aware announcements (v0.06 Phase 3)**
+- Created NightModeProvider — red-tinted map tiles for night riding with auto-suggest
+- Added Taglish navigation voice — "In 200 meters, kumaliwa sa Taft Avenue"
+- Added speed-aware announcement timing — highway 800m, normal 500m, slow 200m, crawl 100m
+- Night mode toggle in Settings + moon/sun button on navigation screen
+
+**`539a396` — feat: add route hazard monitor and 8 new voice commands (v0.06 Phase 4)**
+- Created RouteHazardMonitor — scans route every 30s for hazards, Taglish voice alerts
+- Severe hazards (closure/flood/accident) offer reroute: "Gusto mo mag-reroute?"
+- Added 8 voice commands: reroute, speed, ETA, night mode, rest, dismiss crash, SOS, status
+- Hazard alert banner on navigation screen with REROUTE button
+
+**`ea6a756` — feat: add auto-listen mode and periodic status updates (v0.06 Phase 5)**
+- Auto-listen mode: mic activates every 45s during navigation for 5s
+- Periodic Taglish status: "X minutes na, Y km pa. Arrival Z." at 15/30/60 min intervals
+- Voice FAB shows amber AUTO badge when auto-listen is enabled
+- HANDS-FREE section in Settings with toggle + interval selector
+
 ---
 
 ## What Was Removed / Replaced
@@ -364,6 +447,10 @@ Full build history from initial commit to current version. Every commit, every f
 | Zoom levels 10-17 | Zoom levels 13-15 | ~90% fewer tiles to download |
 | Single "Flooding" hazard | 3 flood severity levels | More useful for riders |
 | Touch-only navigation | Voice commands + touch | Hands-free safety while riding |
+| Fixed voice timing (500m/200m) | Speed-aware timing (100-800m) | Highway vs city riding needs different lead time |
+| English-only OSRM instructions | Taglish turn guidance | Filipino riders understand "kumaliwa" faster than "turn left" |
+| Manual hazard checking | Active route hazard scanning | Riders shouldn't need to check — app alerts them |
+| 6 voice commands | 14 voice commands | Full hands-free control while riding |
 
 ## Key Technical Decisions
 
@@ -372,12 +459,15 @@ Full build history from initial commit to current version. Every commit, every f
 3. **₱0 constraint** — Every API, service, and tool is free tier or open-source. No paid dependencies.
 4. **Provider pattern** — ChangeNotifier + MultiProvider for state management, avoiding over-engineering
 5. **Filipino-first UX** — Taglish voice guidance, Filipino weather descriptions, Tagalog hazard labels, peso currency throughout
+6. **Sensor-based safety** — Accelerometer crash detection reuses existing `sensors_plus` dependency, no new hardware APIs needed
+7. **No new dependencies for v0.06** — All 6 new services built on existing packages (`sensors_plus`, `speech_to_text`, `flutter_tts`, `geolocator`)
 
 ## Version History
 
 | Version | Date | Highlights |
 |---------|------|-----------|
-| **v0.05** | Jun 19, 2026 | Voice commands, Fare Estimator (SULIT/LUGI), Flood & Weather Alerts |
+| **v0.06** | Jun 23, 2026 | Crash detection, speed monitor, fatigue tracker, night mode, Taglish voice, route hazard monitor, 14 voice commands, auto-listen hands-free |
+| v0.05 | Jun 19, 2026 | Voice commands, Fare Estimator (SULIT/LUGI), Flood & Weather Alerts |
 | v0.04 | Jun 19, 2026 | 3-tier AI (Gemini + LLM + KB), storage optimized to ~280 MB |
 | v0.03 | Jun 16-18, 2026 | Migrated to OpenStreetMap, POI overlay, offline tiles, bottom nav, dashboard |
 | v0.02 | Jun 13-14, 2026 | Light/dark theme, fuel calculator, safety features, search redesign |
@@ -385,10 +475,10 @@ Full build history from initial commit to current version. Every commit, every f
 
 ## Stats
 
-- **63 Dart files** | ~14,500 lines of code
+- **69 Dart files** | ~16,250 lines of code
 - **0 analysis errors** (9 warnings/info, all pre-existing)
-- **27 commits** over 7 days of development
-- **v0.05** — Voice + Fare Estimator + Flood Alerts, ₱0 budget
+- **32 commits** over 8 days of development
+- **v0.06** — Crash Detection + Night Mode + Taglish Voice + 14 Voice Commands + Auto-Listen, ₱0 budget
 
 ## Developer
 
