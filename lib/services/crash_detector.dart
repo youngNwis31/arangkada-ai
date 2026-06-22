@@ -100,6 +100,8 @@ class CrashDetector extends ChangeNotifier {
     });
   }
 
+  void triggerSos() => _triggerSos();
+
   void dismiss() {
     _countdownTimer?.cancel();
     _countdownTimer = null;

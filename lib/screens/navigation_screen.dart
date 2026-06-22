@@ -10,6 +10,7 @@ import '../services/navigation_provider.dart';
 import '../services/offline_nav_engine.dart';
 import '../services/fatigue_monitor.dart';
 import '../services/night_mode_provider.dart';
+import '../services/route_hazard_monitor.dart';
 import '../services/speed_monitor.dart';
 import '../widgets/nav_instruction_card.dart';
 import '../widgets/crash_alert_overlay.dart';
@@ -379,6 +380,75 @@ class _NavigationScreenState extends State<NavigationScreen> {
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              Consumer<RouteHazardMonitor>(
+                builder: (_, hazard, __) {
+                  if (!hazard.showBanner || hazard.activeAlert == null) {
+                    return const SizedBox.shrink();
+                  }
+                  final alert = hazard.activeAlert!;
+                  final severe = hazard.isSevere;
+                  final bannerColor = severe
+                      ? MalateColors.hazardRed
+                      : MalateColors.electricAmber;
+                  return Positioned(
+                    top: MediaQuery.of(context).padding.top + 100,
+                    left: 16,
+                    right: 80,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: c.asphalt.withValues(alpha: 0.95),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: bannerColor.withValues(alpha: 0.6)),
+                        boxShadow: MalateColors.neonGlow(
+                            bannerColor, intensity: 0.3),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning_amber,
+                              color: bannerColor, size: 22),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${alert.type.tagalog} AHEAD',
+                              style: MalateTypography.labelMedium.copyWith(
+                                color: bannerColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          if (severe)
+                            GestureDetector(
+                              onTap: () {
+                                hazard.dismissBanner();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: bannerColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text('REROUTE',
+                                    style: MalateTypography.labelSmall
+                                        .copyWith(color: bannerColor)),
+                              ),
+                            ),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: hazard.dismissBanner,
+                            child: Icon(Icons.close,
+                                color: c.textMuted, size: 16),
+                          ),
+                        ],
                       ),
                     ),
                   );

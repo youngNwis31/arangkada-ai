@@ -3,8 +3,12 @@ import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import '../services/ai/ai_assistant.dart';
 import '../services/ai/voice_service.dart';
+import '../services/crash_detector.dart';
+import '../services/fatigue_monitor.dart';
 import '../services/navigation_provider.dart';
+import '../services/night_mode_provider.dart';
 import '../services/ride_logger.dart';
+import '../services/speed_monitor.dart';
 import '../services/hazard_service.dart';
 import '../models/hazard_report.dart';
 import '../services/mapbox_service.dart';
@@ -21,6 +25,10 @@ class VoiceCommandService extends ChangeNotifier {
   NavigationProvider? _nav;
   RideLogger? _rideLogger;
   AiAssistant? _aiAssistant;
+  SpeedMonitor? _speedMonitor;
+  FatigueMonitor? _fatigueMonitor;
+  CrashDetector? _crashDetector;
+  NightModeProvider? _nightMode;
 
   VoiceCommandState get state => _state;
   String get transcript => _transcript;
@@ -63,6 +71,18 @@ class VoiceCommandService extends ChangeNotifier {
     _nav = nav;
     _rideLogger = rideLogger;
     _aiAssistant = aiAssistant;
+  }
+
+  void setSafetyDependencies({
+    required SpeedMonitor speedMonitor,
+    required FatigueMonitor fatigueMonitor,
+    required CrashDetector crashDetector,
+    required NightModeProvider nightMode,
+  }) {
+    _speedMonitor = speedMonitor;
+    _fatigueMonitor = fatigueMonitor;
+    _crashDetector = crashDetector;
+    _nightMode = nightMode;
   }
 
   Future<void> startListening() async {
@@ -115,6 +135,7 @@ class VoiceCommandService extends ChangeNotifier {
     final q = text.toLowerCase().trim();
 
     try {
+      if (_matchSafety(q)) return;
       if (_matchNavigation(q)) return;
       if (_matchRideLog(q)) return;
       if (_matchHazard(q)) return;
@@ -133,6 +154,182 @@ class VoiceCommandService extends ChangeNotifier {
         notifyListeners();
       });
     }
+  }
+
+  bool _matchSafety(String q) {
+    // Reroute
+    if (q == 'reroute' || q.contains('ibang daan') || q.contains('ibang route')) {
+      _handleReroute();
+      return true;
+    }
+
+    // Speed query
+    if (q.contains('speed ko') || q.contains('bilis ko') ||
+        q == 'speed' || q.contains('how fast')) {
+      _handleSpeedQuery();
+      return true;
+    }
+
+    // ETA query
+    if (q.contains('gaano kalayo') || q.contains('kalayo pa') ||
+        q == 'eta' || q.contains('how far') || q.contains('malayo pa')) {
+      _handleEtaQuery();
+      return true;
+    }
+
+    // Night mode
+    if (q.contains('night mode') || q.contains('gabi mode') ||
+        q.contains('night') && q.contains('mode')) {
+      _handleNightMode();
+      return true;
+    }
+
+    // Rest / fatigue reset
+    if (q == 'pahinga' || q == 'rest' || q.contains('take a break') ||
+        q.contains('mag pahinga') || q.contains('magpahinga')) {
+      _handleRest();
+      return true;
+    }
+
+    // Dismiss crash alert
+    if (q.contains("i'm ok") || q.contains('im ok') ||
+        q.contains('ok lang') || q.contains('okay lang') ||
+        q.contains("i am ok") || q.contains('ok ako')) {
+      _handleDismissCrash();
+      return true;
+    }
+
+    // SOS / Help
+    if (q == 'help' || q == 'tulong' || q == 'sos' ||
+        q.contains('emergency') || q.contains('saklolo')) {
+      _handleSos();
+      return true;
+    }
+
+    // Status summary
+    if (q == 'status' || q == 'sitrep' || q.contains('status ko') ||
+        q.contains('anong nangyayari')) {
+      _handleStatus();
+      return true;
+    }
+
+    return false;
+  }
+
+  Future<void> _handleReroute() async {
+    if (_nav == null || !_nav!.isNavigating) {
+      _respond('Not navigating right now');
+      await VoiceService.speak('Hindi ka nag-navigate, rider.');
+      return;
+    }
+    _resultMessage = 'Finding alternative route...';
+    notifyListeners();
+    await VoiceService.speak('Hanap ng ibang daan...');
+
+    try {
+      final dest = _nav!.destination;
+      final origin = _nav!.origin;
+      if (dest == null || origin == null) {
+        _respond('No route to reroute');
+        return;
+      }
+      _nav!.stopNavigation();
+      await _nav!.fetchRoutes();
+      if (_nav!.routes.length > 1) {
+        _nav!.selectRoute(1);
+      }
+      await _nav!.startNavigation();
+      _respond('New route found! Tara na.');
+      await VoiceService.speak('New route! Tara na, rider.');
+    } catch (_) {
+      _respond('Reroute failed');
+      await VoiceService.speak('Sorry, walang ibang daan.');
+    }
+  }
+
+  void _handleSpeedQuery() {
+    final kmh = _speedMonitor?.currentSpeedKmh.toInt() ?? 0;
+    final limit = _speedMonitor?.speedLimitKmh.toInt() ?? 60;
+    final text = '$kmh km/h. Limit is $limit.';
+    _respond(text);
+    VoiceService.speak('$kmh kilometers per hour. Limit is $limit.');
+  }
+
+  void _handleEtaQuery() {
+    final engine = _nav?.navEngine;
+    if (engine == null || !engine.isNavigating) {
+      _respond('Not navigating');
+      VoiceService.speak('Hindi ka nag-navigate, rider.');
+      return;
+    }
+    final dist = engine.totalRemainingDistance;
+    final distText = dist >= 1000
+        ? '${(dist / 1000).toStringAsFixed(1)} km'
+        : '${dist.toInt()} meters';
+    final eta = engine.etaText;
+    final arrival = engine.etaTimeText;
+    _respond('$distText left. ETA $eta ($arrival)');
+    VoiceService.speak('$distText pa. $eta, arrival $arrival.');
+  }
+
+  void _handleNightMode() {
+    if (_nightMode == null) {
+      _respond('Night mode not available');
+      return;
+    }
+    _nightMode!.toggle();
+    final on = _nightMode!.isNightMode;
+    _respond('Night mode ${on ? "ON" : "OFF"}');
+    VoiceService.speak('Night mode ${on ? "on" : "off"}, rider.');
+  }
+
+  void _handleRest() {
+    _fatigueMonitor?.markRest();
+    _respond('Rest timer reset');
+    VoiceService.speak('Rest timer reset. Pahinga muna, rider!');
+  }
+
+  void _handleDismissCrash() {
+    _crashDetector?.dismiss();
+    _respond('Crash alert dismissed');
+    VoiceService.speak('Ok, glad you are ok, rider!');
+  }
+
+  void _handleSos() {
+    _crashDetector?.triggerSos();
+    _respond('SOS triggered!');
+  }
+
+  void _handleStatus() {
+    final parts = <String>[];
+
+    if (_nav?.isNavigating == true) {
+      final engine = _nav!.navEngine;
+      final dist = engine.totalRemainingDistance;
+      final distText = dist >= 1000
+          ? '${(dist / 1000).toStringAsFixed(1)} km'
+          : '${dist.toInt()} m';
+      parts.add('$distText left, ETA ${engine.etaText}');
+    } else {
+      parts.add('Not navigating');
+    }
+
+    final kmh = _speedMonitor?.currentSpeedKmh.toInt() ?? 0;
+    parts.add('Speed: $kmh km/h');
+
+    if (_fatigueMonitor?.isRiding == true) {
+      parts.add('Riding: ${_fatigueMonitor!.rideTimeText}');
+    }
+
+    final summary = parts.join('. ');
+    _respond(summary);
+    VoiceService.speak(summary);
+  }
+
+  void _respond(String message) {
+    _resultMessage = message;
+    _state = VoiceCommandState.idle;
+    notifyListeners();
   }
 
   bool _matchNavigation(String q) {
