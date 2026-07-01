@@ -20,8 +20,9 @@ dependencies:
   sensors_plus: ^6.1.1
   connectivity_plus: ^6.1.1
 
-  # State Management
+  # State Management & DI
   provider: ^6.1.2
+  get_it: ^8.0.3
 
   # Local Storage (Offline-First)
   sqflite: ^2.4.1
